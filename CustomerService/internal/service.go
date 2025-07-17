@@ -34,7 +34,6 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.Customer, erro
 }
 
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
-	// Dönüştürme
 	customer := &types.Customer{
 		Password:  req.Password,
 		FirstName: req.FirstName,
