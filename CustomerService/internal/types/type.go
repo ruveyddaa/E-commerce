@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type CreateCustomerRequestModel struct {
 	FirstName string            `bson:"first_name" json:"first_name" validate:"required,min=2,max=50"`
@@ -23,13 +27,13 @@ type UpdateCustomerRequestModel struct {
 }
 
 type CustomerResponseModel struct {
-	ID        int               `bson:"_id" json:"id"`
-	FirstName string            `bson:"first_name" json:"first_name"`
-	LastName  string            `bson:"last_name" json:"last_name"`
-	Email     map[string]string `bson:"email" json:"email"`
-	Phone     []Phone           `bson:"phone" json:"phone"`
-	Address   []Address         `bson:"address" json:"address"`
-	IsActive  bool              `bson:"is_active" json:"is_active"`
-	CreatedAt time.Time         `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time         `bson:"updated_at" json:"updated_at"`
+	ID        primitive.ObjectID `bson:"_id" json:"id"`
+	FirstName string             `bson:"first_name" json:"first_name"`
+	LastName  string             `bson:"last_name" json:"last_name"`
+	Email     map[string]string  `bson:"email" json:"email"`
+	Phone     []Phone            `bson:"phone" json:"phone"`
+	Address   []Address          `bson:"address" json:"address"`
+	IsActive  bool               `bson:"is_active" json:"is_active"`
+	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 }

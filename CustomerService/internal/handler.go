@@ -23,14 +23,14 @@ func NewHandler(e *echo.Echo, service *Service) {
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
-	id := c.Param("id")
+	id := c.Param("id") // URL’den gelen id’yi alıyoruz
+
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusNotFound, echo.Map{"error": "Customer not found"})
 	}
 
-	customerResponse := ToCustomerResponse(customer)
-	return c.JSON(http.StatusOK, customerResponse)
+	return c.JSON(http.StatusOK, customer) // frontend'e JSON olarak döner
 }
 
 func (h *Handler) Create(c echo.Context) error {
