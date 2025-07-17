@@ -5,6 +5,7 @@ import (
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -19,9 +20,13 @@ func NewRepository(col *mongo.Collection) *Repository {
 	}
 }
 
-func (r *Repository) FindByID(ctx context.Context, id string) (*types.Customer, error) {
-	var customer *types.Customer
-	return customer, nil
+func (r *Repository) GetByID(ctx context.Context, id primitive.ObjectID) (*types.Customer, error) {
+	var customer types.Customer
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&customer)
+	if err != nil {
+		return nil, err
+	}
+	return &customer, nil
 }
 
 func (r *Repository) Create(ctx context.Context, customer *types.Customer) (primitive.ObjectID, error) {
