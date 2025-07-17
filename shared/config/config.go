@@ -13,15 +13,15 @@ type DbConfig struct {
 var cfgs = map[string]DbConfig{
 	"prod": {
 		MongoDuration:  time.Second * 10,
-		MongoClientURI: "mongodb://root:root1234@mongodb_docker:27017",
+		MongoClientURI: "mongodb+srv://tesodevmongodb:testtesodev@cluster0.ajddxq7.mongodb.net/tesodev?retryWrites=true&w=majority",
 	},
 	"qa": {
 		MongoDuration:  time.Second * 10,
-		MongoClientURI: "mongodb://root:root1234@mongodb_docker:27017",
+		MongoClientURI: "mongodb+srv://tesodevmongodb:testtesodev@cluster0.ajddxq7.mongodb.net/tesodev?retryWrites=true&w=majority",
 	},
 	"dev": {
 		MongoDuration:  time.Second * 10,
-		MongoClientURI: "mongodb://localhost:27017/",
+		MongoClientURI: "mongodb+srv://tesodevmongodb:testtesodev@cluster0.ajddxq7.mongodb.net/tesodev?retryWrites=true&w=majority",
 	},
 }
 
