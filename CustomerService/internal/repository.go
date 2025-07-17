@@ -8,7 +8,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type Pagination struct {
+	Page  int
+	Limit int
+}
 
 type Repository struct {
 	collection *mongo.Collection
@@ -56,4 +62,20 @@ func (r *Repository) Update(ctx context.Context, id string, update interface{}) 
 func (r *Repository) Delete(ctx context.Context, id string) error {
 	// Placeholder method
 	return nil
+}
+
+func (r *Repository) Get(ctx context.Context, opt *options.FindOptions) ([]types.Customer, error) {
+	var customers []types.Customer
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, opt)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err = cursor.All(ctx, &customers); err != nil {
+		return nil, err
+	}
+
+	return customers, nil
 }

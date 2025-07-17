@@ -2,6 +2,7 @@ package internal
 
 import (
 	"net/http"
+	"strconv"
 	"tesodev-korpes/CustomerService/internal/types"
 
 	"github.com/labstack/echo/v4"
@@ -18,8 +19,8 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.GET("/:id", handler.GetByID)
 	g.POST("/", handler.Create)
 	g.PUT("/:id", handler.Update)
-	g.PATCH("/:id", handler.PartialUpdate)
 	g.DELETE("/:id", handler.Delete)
+	g.GET("/list", handler.GetListCustomer)
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
@@ -62,22 +63,36 @@ func (h *Handler) Update(c echo.Context) error {
 	return c.JSON(http.StatusOK, "Customer updated successfully")
 }
 
-func (h *Handler) PartialUpdate(c echo.Context) error {
-	id := c.Param("id")
-	var update interface{}
-	if err := c.Bind(&update); err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-	if err := h.service.Update(c.Request().Context(), id, update); err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-	return c.JSON(http.StatusOK, "Customer partially updated successfully")
-}
-
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, "Customer deleted successfully")
+}
+
+func (h *Handler) GetListCustomer(c echo.Context) error {
+	params := Pagination{
+		Limit: 10,
+		Page:  1,
+	}
+
+	if p := c.QueryParam("page"); p != "" {
+		if pageInt, err := strconv.Atoi(p); err == nil && pageInt > 0 {
+			params.Page = pageInt
+		}
+	}
+
+	if l := c.QueryParam("limit"); l != "" {
+		if limitInt, err := strconv.Atoi(l); err == nil && limitInt > 0 {
+			params.Limit = limitInt
+		}
+	}
+
+	customers, err := h.service.Get(c.Request().Context(), params)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})
 }
