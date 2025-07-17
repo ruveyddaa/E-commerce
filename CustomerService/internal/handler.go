@@ -68,7 +68,7 @@ func (h *Handler) Delete(c echo.Context) error {
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	return c.JSON(http.StatusOK, "Customer deleted successfully")
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *Handler) GetListCustomer(c echo.Context) error {

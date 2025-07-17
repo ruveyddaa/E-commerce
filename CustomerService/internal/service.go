@@ -93,7 +93,20 @@ func (s *Service) Update(ctx context.Context, id string, update interface{}) err
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
-	return s.repo.Delete(ctx, id)
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	if _, err := s.repo.GetByID(ctx, objectID); err != nil {
+		return err
+	}
+
+	if err := s.repo.DeleteByObjectID(ctx, objectID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Service) Get(ctx context.Context, params Pagination) ([]ServiceCustomerResponseModel, error) {
@@ -109,7 +122,7 @@ func (s *Service) Get(ctx context.Context, params Pagination) ([]ServiceCustomer
 	}
 
 	var responses []ServiceCustomerResponseModel
-	for _, c := range customers { 
+	for _, c := range customers {
 		responses = append(responses, ServiceCustomerResponseModel{
 			ID:        c.Id,
 			FirstName: c.FirstName,
