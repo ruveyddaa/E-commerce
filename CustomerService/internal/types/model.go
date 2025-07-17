@@ -19,13 +19,13 @@ type Customer struct {
 }
 
 type Address struct {
-	Id      primitive.ObjectID `bson:"address_id" json:"address_id"`
+	Id      primitive.ObjectID `bson:"address_id,omitempty" json:"address_id"`
 	City    string             `bson:"city" json:"city"`
 	State   string             `bson:"state" json:"state"`
 	ZipCode string             `bson:"zip_code" json:"zip_code"`
 }
 
 type Phone struct {
-	Id          primitive.ObjectID `bson:"phone_id" json:"phone_id"`
+	Id          primitive.ObjectID `bson:"phone_id,omitempty" json:"phone_id"`
 	PhoneNumber int                `bson:"phone_number" json:"phone_number"`
 }
