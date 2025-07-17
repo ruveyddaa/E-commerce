@@ -2,8 +2,11 @@ package internal
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo"
 	"tesodev-korpes/CustomerService/internal/types"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Repository struct {
@@ -21,9 +24,23 @@ func (r *Repository) FindByID(ctx context.Context, id string) (*types.Customer, 
 	return customer, nil
 }
 
-func (r *Repository) Create(ctx context.Context, customer interface{}) error {
-	// Placeholder method
-	return nil
+func (r *Repository) Create(ctx context.Context, customer *types.Customer) (primitive.ObjectID, error) {
+	customer.CreatedAt = time.Now()
+	customer.UpdatedAt = time.Now()
+	customer.IsActive = true
+
+	result, err := r.collection.InsertOne(ctx, customer)
+
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+
+	insertedID, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return primitive.NilObjectID, mongo.ErrNilDocument
+	}
+
+	return insertedID, nil
 }
 
 func (r *Repository) Update(ctx context.Context, id string, update interface{}) error {

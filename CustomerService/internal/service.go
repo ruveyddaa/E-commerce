@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"tesodev-korpes/CustomerService/internal/types"
+	"time"
 )
 
 type Service struct {
@@ -32,8 +33,25 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.Customer, erro
 	return customer, nil
 }
 
-func (s *Service) Create(ctx context.Context, customer interface{}) error {
-	return s.repo.Create(ctx, customer)
+func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
+	customer := &types.Customer{
+		Password:  req.Password,
+		FirstName: req.FirstName,
+		LastName:  req.LastName,
+		Email:     req.Email,
+		Phone:     req.Phone,
+		Address:   req.Address,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		IsActive:  true,
+	}
+
+	id, err := s.repo.Create(ctx, customer)
+	if err != nil {
+		return "", err
+	}
+
+	return id.Hex(), nil
 }
 
 func (s *Service) Update(ctx context.Context, id string, update interface{}) error {

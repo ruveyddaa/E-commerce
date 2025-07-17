@@ -2,6 +2,7 @@ package internal
 
 import (
 	"net/http"
+	"tesodev-korpes/CustomerService/internal/types"
 
 	"github.com/labstack/echo/v4"
 )
@@ -33,21 +34,20 @@ func (h *Handler) GetByID(c echo.Context) error {
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	var customer interface{}
-	if err := c.Bind(&customer); err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+	var req types.CreateCustomerRequestModel
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
-	//change the structure to;
-	//this endpoint should return that response when 200;
-	//{
-	//	"message" : "Succeeded!",
-	//	"creadtedId" : "550e8400-e29b-41d4-a716-446655440000"
-	//}
-	//manage somehow (hint : look for a way to get that id from the mongo method that you will be using)
-	if err := h.service.Create(c.Request().Context(), customer); err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+
+	createdID, err := h.service.Create(c.Request().Context(), &req)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
-	return c.JSON(http.StatusCreated, "Customer created successfully")
+
+	return c.JSON(http.StatusCreated, echo.Map{
+		"message":   "Succeeded!",
+		"createdId": createdID,
+	})
 }
 
 func (h *Handler) Update(c echo.Context) error {

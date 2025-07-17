@@ -1,10 +1,12 @@
 package main
 
 import (
-	"github.com/labstack/echo/v4"
+	"fmt"
 	"tesodev-korpes/CustomerService/cmd"
 	"tesodev-korpes/pkg"
 	"tesodev-korpes/shared/config"
+
+	"github.com/labstack/echo/v4"
 )
 
 func main() {
@@ -15,6 +17,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("connecting db")
 
 	e := echo.New()
 
