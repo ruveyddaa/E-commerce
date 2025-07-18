@@ -23,12 +23,12 @@ func NewService(repo *Repository) *Service {
 func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerResponseModel, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		return nil, NewBadRequest(fmt.Sprintf("invalid ID format: %s", id))
 	}
 
 	customer, err := s.repo.GetByID(ctx, objectID)
 	if err != nil {
-		return nil, err
+		return nil, NewBadRequest(fmt.Sprintf("invalid ID format: %s", id))
 	}
 
 	response := types.CustomerResponseModel{
