@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
 
@@ -71,7 +72,20 @@ func (s *Service) Update(ctx context.Context, id string, update interface{}) err
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
-	return s.repo.Delete(ctx, id)
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return NewBadRequest(fmt.Sprintf("Invalid id format: %s", id))
+	}
+
+	_, err = s.repo.GetByID(ctx, objectID)
+	if err != nil {
+		return NewNotFound(fmt.Sprintf("Customer not found with id %s", id))
+	}
+
+	if err := s.repo.DeleteByObjectID(ctx, objectID); err != nil {
+		return NewInternal(fmt.Sprintf("Failed to delete customer with id %s", id))
+	}
+	return nil
 }
 
 func (s *Service) Get(ctx context.Context, params Pagination) ([]types.CustomerResponseModel, error) {

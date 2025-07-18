@@ -59,8 +59,14 @@ func (r *Repository) Update(ctx context.Context, id string, update interface{}) 
 	return nil
 }
 
-func (r *Repository) Delete(ctx context.Context, id string) error {
-	// Placeholder method
+func (r *Repository) DeleteByObjectID(ctx context.Context, id primitive.ObjectID) error {
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
 	return nil
 }
 
