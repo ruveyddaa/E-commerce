@@ -70,19 +70,20 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustomerRequestModel) (*types.Customer, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, fmt.Errorf("invalid ID format: %w", err)
+		//return nil, (fmt.Sprintf("invalid ID format: %w", err))
+		return nil, NewBadRequest(fmt.Sprintf("invalid ID format: %s", id))
 	}
-
 	customer, err := s.repo.GetByID(ctx, objectID)
-	if err != nil {
-		return nil, fmt.Errorf("customer not found: %w", err)
-	}
 
+	if err != nil {
+		//return nil, fmt.Errorf("customer not found: %w", err)
+		return nil, NewNotFound(fmt.Sprintf("customer not found for ID: %s", id))
+	}
 	updatedCustomer := FromUpdateCustomerRequest(customer, req)
 
 	err = s.repo.Update(ctx, objectID, updatedCustomer)
 	if err != nil {
-		return nil, err
+		return nil, NewInternal("failed to update customer")
 	}
 	return updatedCustomer, nil
 }

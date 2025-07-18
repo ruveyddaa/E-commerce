@@ -1,9 +1,8 @@
 package internal
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 type AppError struct {
