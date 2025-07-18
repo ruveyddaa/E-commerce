@@ -32,7 +32,14 @@ func GetDBConfig(env string) *DbConfig {
 		panic("config does not exist")
 	}
 
-	config.MongoClientURI = MongoUrlLoad() // sadece çağrılan config için yüklenir
+	if env == "dev" {
+		config.MongoClientURI = MongoUrlLoad() 
+	} else if env == "qa" {
+		// give the env for testing 
+	} else  {
+		// give the env for production
+	}
+
 
 	return &config
 }
