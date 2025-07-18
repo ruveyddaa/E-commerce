@@ -16,16 +16,13 @@ type DbConfig struct {
 
 var cfgs = map[string]DbConfig{
 	"prod": {
-		MongoDuration:  time.Second * 100,
-		MongoClientURI: MongoUrlLoad(),
+		MongoDuration: time.Second * 100,
 	},
 	"qa": {
-		MongoDuration:  time.Second * 100,
-		MongoClientURI: MongoUrlLoad(),
+		MongoDuration: time.Second * 100,
 	},
 	"dev": {
-		MongoDuration:  time.Second * 100,
-		MongoClientURI: MongoUrlLoad(),
+		MongoDuration: time.Second * 100,
 	},
 }
 
@@ -35,6 +32,7 @@ func GetDBConfig(env string) *DbConfig {
 		panic("config does not exist")
 	}
 
+	config.MongoClientURI = MongoUrlLoad() // sadece çağrılan config için yüklenir
 
 	return &config
 }
