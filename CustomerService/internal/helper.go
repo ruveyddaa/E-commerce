@@ -65,11 +65,11 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	if customer == nil || req == nil {
 		return customer
 	}
-	if req.FirstName != nil {
-		customer.FirstName = *req.FirstName
+	if req.FirstName != "" {
+		customer.FirstName = req.FirstName
 	}
-	if req.LastName != nil {
-		customer.LastName = *req.LastName
+	if req.LastName != "" {
+		customer.LastName = req.LastName
 	}
 	if req.Email != nil {
 		customer.Email = req.Email
@@ -83,8 +83,8 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	if req.Password != nil {
 		customer.Password = req.Password
 	}
-	if req.IsActive != nil {
-		customer.IsActive = *req.IsActive
+	if req.IsActive != false {
+		customer.IsActive = req.IsActive
 	}
 	return customer
 }

@@ -54,9 +54,23 @@ func (r *Repository) Create(ctx context.Context, customer *types.Customer) (prim
 	return insertedID, nil
 }
 
-func (r *Repository) Update(ctx context.Context, id string, update interface{}) error {
-	// Placeholder method
-	return nil
+func (r *Repository) Update(ctx context.Context, id primitive.ObjectID, customer *types.Customer) error {
+	filter := bson.M{"_id": id}
+	update := bson.M{
+		"$set": bson.M{
+			"first_name": customer.FirstName,
+			"last_name":  customer.LastName,
+			"email":      customer.Email,
+			"phone":      customer.Phone,
+			"address":    customer.Address,
+			"password":   customer.Password,
+			"is_active":  customer.IsActive,
+			"updated_at": time.Now(),
+		},
+	}
+
+	_, err := r.collection.UpdateOne(ctx, filter, update)
+	return err
 }
 
 func (r *Repository) DeleteByObjectID(ctx context.Context, id primitive.ObjectID) error {
