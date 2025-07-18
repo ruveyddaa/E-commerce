@@ -9,28 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type ServiceCustomerRequestModel struct {
-	FirstName string
-	LastName  string
-	Email     map[string]string
-	Phone     []types.Phone
-	Address   []types.Address
-	Password  []byte
-	IsActive  bool
-}
-
-type ServiceCustomerResponseModel struct {
-	ID        primitive.ObjectID
-	FirstName string
-	LastName  string
-	Email     map[string]string
-	Phone     []types.Phone
-	Address   []types.Address
-	IsActive  bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
 type Service struct {
 	repo *Repository
 }
@@ -96,7 +74,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *Service) Get(ctx context.Context, params Pagination) ([]ServiceCustomerResponseModel, error) {
+func (s *Service) Get(ctx context.Context, params Pagination) ([]types.CustomerResponseModel, error) {
 	skip := (params.Page - 1) * params.Limit
 
 	findOptions := options.Find().
@@ -107,20 +85,11 @@ func (s *Service) Get(ctx context.Context, params Pagination) ([]ServiceCustomer
 	if err != nil {
 		return nil, err
 	}
-
-	var responses []ServiceCustomerResponseModel
-	for _, c := range customers { 
-		responses = append(responses, ServiceCustomerResponseModel{
-			ID:        c.Id,
-			FirstName: c.FirstName,
-			LastName:  c.LastName,
-			Email:     c.Email,
-			Phone:     c.Phone,
-			Address:   c.Address,
-			IsActive:  c.IsActive,
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
-		})
+	
+	var responses []types.CustomerResponseModel
+	for _, c := range customers {
+		customerResponse := ToCustomerResponse(&c) 
+		responses = append(responses, *customerResponse)
 	}
 
 	return responses, nil
