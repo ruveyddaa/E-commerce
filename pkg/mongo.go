@@ -2,10 +2,12 @@ package pkg
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"time"
 )
 
 func GetMongoClient(timeout time.Duration, URI string) (*mongo.Client, error) {
@@ -26,5 +28,6 @@ func GetMongoClient(timeout time.Duration, URI string) (*mongo.Client, error) {
 
 func GetMongoCollection(client *mongo.Client, dbName, colName string) (*mongo.Collection, error) {
 	col := client.Database(dbName).Collection(colName)
+	fmt.Println("Connected databased")
 	return col, nil
 }
