@@ -31,19 +31,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 		return nil, NewNotFound(fmt.Sprintf("customer not found for ID: %s", id))
 	}
 
-	response := types.CustomerResponseModel{
-		ID:        customer.Id,
-		FirstName: customer.FirstName,
-		LastName:  customer.LastName,
-		Email:     customer.Email,
-		Phone:     customer.Phone,
-		IsActive:  customer.IsActive,
-		Address:   customer.Address,
-		CreatedAt: customer.CreatedAt,
-		UpdatedAt: customer.UpdatedAt,
-	}
-
-	return &response, nil
+	return ToCustomerResponse(customer), nil
 }
 
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
