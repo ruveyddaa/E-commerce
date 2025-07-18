@@ -95,7 +95,7 @@ func (h *Handler) GetListCustomer(c echo.Context) error {
 
 	customers, err := h.service.Get(c.Request().Context(), params)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return NewInternal(err.Error())
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})
