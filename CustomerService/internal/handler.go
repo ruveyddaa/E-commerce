@@ -50,17 +50,21 @@ func (h *Handler) Create(c echo.Context) error {
 		"createdId": createdID,
 	})
 }
-
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
-	var update interface{}
-	if err := c.Bind(&update); err != nil {
+
+	var req types.UpdateCustomerRequestModel
+	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	if err := h.service.Update(c.Request().Context(), id, update); err != nil {
+
+	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	return c.JSON(http.StatusOK, "Customer updated successfully")
+
+	response := ToCustomerResponse(updatedCustomer)
+	return c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) Delete(c echo.Context) error {

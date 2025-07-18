@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
 
@@ -88,8 +89,24 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	return id.Hex(), nil
 }
 
-func (s *Service) Update(ctx context.Context, id string, update interface{}) error {
-	return s.repo.Update(ctx, id, update)
+func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustomerRequestModel) (*types.Customer, error) {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid ID format: %w", err)
+	}
+
+	customer, err := s.repo.GetByID(ctx, objectID)
+	if err != nil {
+		return nil, fmt.Errorf("customer not found: %w", err)
+	}
+
+	updatedCustomer := FromUpdateCustomerRequest(customer, req)
+
+	err = s.repo.Update(ctx, objectID, updatedCustomer)
+	if err != nil {
+		return nil, err
+	}
+	return updatedCustomer, nil
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
