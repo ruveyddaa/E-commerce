@@ -83,7 +83,7 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	if req.Password != nil {
 		customer.Password = req.Password
 	}
-	if req.IsActive != false {
+	if !req.IsActive {
 		customer.IsActive = req.IsActive
 	}
 	return customer

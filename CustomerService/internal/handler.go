@@ -76,7 +76,7 @@ func (h *Handler) Delete(c echo.Context) error {
 }
 
 func (h *Handler) GetListCustomer(c echo.Context) error {
-	params := Pagination{
+	params := types.Pagination{
 		Limit: 10,
 		Page:  1,
 	}

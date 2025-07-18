@@ -105,7 +105,7 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Service) Get(ctx context.Context, params Pagination) ([]types.CustomerResponseModel, error) {
+func (s *Service) Get(ctx context.Context, params types.Pagination) ([]types.CustomerResponseModel, error) {
 	skip := (params.Page - 1) * params.Limit
 
 	findOptions := options.Find().
