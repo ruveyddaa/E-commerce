@@ -11,10 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Pagination struct {
-	Page  int
-	Limit int
-}
 
 type Repository struct {
 	collection *mongo.Collection
