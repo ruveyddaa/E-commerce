@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-
 type Repository struct {
 	collection *mongo.Collection
 }
@@ -69,7 +68,7 @@ func (r *Repository) Update(ctx context.Context, id primitive.ObjectID, customer
 	return err
 }
 
-func (r *Repository) DeleteByObjectID(ctx context.Context, id primitive.ObjectID) error {
+func (r *Repository) Delete(ctx context.Context, id primitive.ObjectID) error {
 	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
 		return err
