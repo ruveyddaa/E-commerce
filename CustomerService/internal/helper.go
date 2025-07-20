@@ -8,7 +8,7 @@ import (
 // the return statement that I commented out repreents an introduction that how you can implement it
 // you can delete after you'd completed the helper method, its a placeholder put here just to prevent getting errors at
 // the beginning
-// ToCustomerResponse converts Customer entity to CustomerResponseModel
+
 func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 	if customer == nil {
 		return nil
@@ -25,26 +25,6 @@ func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 		UpdatedAt: customer.UpdatedAt,
 	}
 }
-
-// ToCustomer converts CustomerResponseModel back to Customer entity
-func ToCustomer(resp *types.CustomerResponseModel) *types.Customer {
-	if resp == nil {
-		return nil
-	}
-	return &types.Customer{
-		Id:        resp.ID,
-		FirstName: resp.FirstName,
-		LastName:  resp.LastName,
-		Email:     resp.Email,
-		Phone:     resp.Phone,
-		Address:   resp.Address,
-		IsActive:  resp.IsActive,
-		CreatedAt: resp.CreatedAt,
-		UpdatedAt: resp.UpdatedAt,
-	}
-}
-
-// FromCreateCustomerRequest converts CreateCustomerRequestModel to Customer entity
 func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Customer {
 	if req == nil {
 		return nil
@@ -59,8 +39,6 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 		IsActive:  req.IsActive,
 	}
 }
-
-// FromUpdateCustomerRequest updates existing Customer entity with UpdateCustomerRequestModel fields
 func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustomerRequestModel) *types.Customer {
 	if customer == nil || req == nil {
 		return customer
