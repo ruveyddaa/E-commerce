@@ -40,6 +40,7 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	customer.UpdatedAt = time.Now()
 	customer.IsActive = true
 	id, err := s.repo.Create(ctx, customer)
+
 	if err != nil {
 		return "", NewNotFound(fmt.Sprintf("failed to create customer: %v", err))
 	}
