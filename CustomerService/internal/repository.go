@@ -31,9 +31,6 @@ func (r *Repository) GetByID(ctx context.Context, id primitive.ObjectID) (*types
 }
 
 func (r *Repository) Create(ctx context.Context, customer *types.Customer) (primitive.ObjectID, error) {
-	customer.CreatedAt = time.Now()
-	customer.UpdatedAt = time.Now()
-	customer.IsActive = true
 
 	result, err := r.collection.InsertOne(ctx, customer)
 

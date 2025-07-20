@@ -35,21 +35,13 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 }
 
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
-	customer := &types.Customer{
-		Password:  req.Password,
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Email:     req.Email,
-		Phone:     req.Phone,
-		Address:   req.Address,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-		IsActive:  true,
-	}
-
+	customer := FromCreateCustomerRequest(req)
+	customer.CreatedAt = time.Now()
+	customer.UpdatedAt = time.Now()
+	customer.IsActive = true
 	id, err := s.repo.Create(ctx, customer)
 	if err != nil {
-		return "", err
+		return "", NewNotFound(fmt.Sprintf("failed to create customer: %v", err))
 	}
 
 	return id.Hex(), nil
