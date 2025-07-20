@@ -82,14 +82,14 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 		return NewBadRequest(fmt.Sprintf("Invalid id format: %s", id))
 	}
 
-	if _, err := s.repo.GetByID(ctx, objectID); err != nil {
+	_, err = s.repo.GetByID(ctx, objectID)
+	if err != nil {
 		return NewNotFound(fmt.Sprintf("Customer not found with id %s", id))
 	}
 
 	if err := s.repo.Delete(ctx, objectID); err != nil {
 		return NewInternal(fmt.Sprintf("Failed to delete customer with id %s", id))
 	}
-
 	return nil
 }
 
