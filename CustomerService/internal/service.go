@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -93,8 +94,12 @@ func (s *Service) Get(ctx context.Context, params types.Pagination) ([]types.Cus
 		SetLimit(int64(params.Limit))
 
 	customers, err := s.repo.Get(ctx, findOptions)
+
 	if err != nil {
-		return nil, err
+		if err == mongo.ErrNoDocuments {
+			return nil, NewNotFound("aranan kriterlere uygun müşteri bulunamadı")
+		}
+		return nil, NewInternal(err.Error())
 	}
 
 	var responses []types.CustomerResponseModel
