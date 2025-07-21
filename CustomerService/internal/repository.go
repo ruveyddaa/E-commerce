@@ -49,7 +49,7 @@ func (r *Repository) Create(ctx context.Context, customer *types.Customer) (prim
 func (r *Repository) Update(ctx context.Context, id primitive.ObjectID, customer *types.Customer) error {
 	filter := bson.M{"_id": id}
 	update := bson.M{
-		"$set": bson.M{
+		"$set": bson.M{ // todo mongo operatorlerle çözebilrisin
 			"first_name": customer.FirstName,
 			"last_name":  customer.LastName,
 			"email":      customer.Email,
