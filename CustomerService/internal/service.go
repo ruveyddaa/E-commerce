@@ -97,7 +97,7 @@ func (s *Service) Get(ctx context.Context, params types.Pagination) ([]types.Cus
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, NewNotFound("aranan kriterlere uygun müşteri bulunamadı")
+			return nil, NewNotFound("customer not found")
 		}
 		return nil, NewInternal(err.Error())
 	}

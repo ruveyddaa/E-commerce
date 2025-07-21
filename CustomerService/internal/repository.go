@@ -82,7 +82,7 @@ func (r *Repository) Get(ctx context.Context, opt *options.FindOptions) ([]types
 	cursor, err := r.collection.Find(ctx, bson.M{}, opt)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, NewNotFound("aranan kriterlere uygun müşteri bulunamadı")
+			return nil, NewNotFound("customer not found")
 		}
 		return nil, NewInternal(err.Error())
 	}
