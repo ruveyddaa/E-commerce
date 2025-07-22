@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"tesodev-korpes/CustomerService/cmd"
+	_ "tesodev-korpes/docs"
 	"tesodev-korpes/pkg"
 	"tesodev-korpes/shared/config"
 
@@ -20,6 +22,8 @@ func main() {
 	fmt.Println("connecting db")
 
 	e := echo.New()
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	// http://localhost:8001/swagger/index.html#/
 
 	cmd.BootCustomerService(client, e)
 
