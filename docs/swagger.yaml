@@ -118,9 +118,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create customer from payload
+      description: Create a new customer with the given data
       parameters:
-      - description: Customer payload
+      - description: Customer to create
         in: body
         name: customer
         required: true
@@ -147,7 +147,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Delete a customer by ID
+      description: Delete a customer from the system
       parameters:
       - description: Customer ID
         in: path
@@ -171,13 +171,13 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Delete customer
+      summary: Delete a customer by ID
       tags:
       - customers
     get:
       consumes:
       - application/json
-      description: Retrieve a customer by its ID
+      description: Get a customer by its unique ID
       parameters:
       - description: Customer ID
         in: path
@@ -203,14 +203,14 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update customer by ID
+      description: Update a customer with the given ID
       parameters:
       - description: Customer ID
         in: path
         name: id
         required: true
         type: string
-      - description: Customer payload
+      - description: Customer data to update
         in: body
         name: customer
         required: true
@@ -231,7 +231,7 @@ paths:
           description: Internal Server Error
           schema:
             type: string
-      summary: Update customer
+      summary: Update an existing customer
       tags:
       - customers
   /customer/list:
@@ -244,7 +244,7 @@ paths:
         in: query
         name: page
         type: integer
-      - description: Page size
+      - description: Number of items per page
         in: query
         name: limit
         type: integer

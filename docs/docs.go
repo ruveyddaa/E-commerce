@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/customer/": {
             "post": {
-                "description": "Create customer from payload",
+                "description": "Create a new customer with the given data",
                 "consumes": [
                     "application/json"
                 ],
@@ -30,7 +30,7 @@ const docTemplate = `{
                 "summary": "Create a new customer",
                 "parameters": [
                     {
-                        "description": "Customer payload",
+                        "description": "Customer to create",
                         "name": "customer",
                         "in": "body",
                         "required": true,
@@ -81,7 +81,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Page size",
+                        "description": "Number of items per page",
                         "name": "limit",
                         "in": "query"
                     }
@@ -108,7 +108,7 @@ const docTemplate = `{
         },
         "/customer/{id}": {
             "get": {
-                "description": "Retrieve a customer by its ID",
+                "description": "Get a customer by its unique ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -147,7 +147,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update customer by ID",
+                "description": "Update a customer with the given ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -157,7 +157,7 @@ const docTemplate = `{
                 "tags": [
                     "customers"
                 ],
-                "summary": "Update customer",
+                "summary": "Update an existing customer",
                 "parameters": [
                     {
                         "type": "string",
@@ -167,7 +167,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Customer payload",
+                        "description": "Customer data to update",
                         "name": "customer",
                         "in": "body",
                         "required": true,
@@ -198,7 +198,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete a customer by ID",
+                "description": "Delete a customer from the system",
                 "consumes": [
                     "application/json"
                 ],
@@ -208,7 +208,7 @@ const docTemplate = `{
                 "tags": [
                     "customers"
                 ],
-                "summary": "Delete customer",
+                "summary": "Delete a customer by ID",
                 "parameters": [
                     {
                         "type": "string",
