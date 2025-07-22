@@ -1,0 +1,268 @@
+definitions:
+  types.Address:
+    properties:
+      address_id:
+        type: string
+      city:
+        type: string
+      state:
+        type: string
+      zip_code:
+        type: string
+    type: object
+  types.CreateCustomerRequestModel:
+    properties:
+      FirstName:
+        maxLength: 50
+        minLength: 2
+        type: string
+      address:
+        items:
+          $ref: '#/definitions/types.Address'
+        type: array
+      email:
+        additionalProperties:
+          type: string
+        type: object
+      is_active:
+        type: boolean
+      last_name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      password:
+        items:
+          type: integer
+        type: array
+      phone:
+        items:
+          $ref: '#/definitions/types.Phone'
+        type: array
+    required:
+    - FirstName
+    - address
+    - email
+    - last_name
+    - password
+    - phone
+    type: object
+  types.CustomerResponseModel:
+    properties:
+      address:
+        items:
+          $ref: '#/definitions/types.Address'
+        type: array
+      created_at:
+        type: string
+      email:
+        additionalProperties:
+          type: string
+        type: object
+      first_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      phone:
+        items:
+          $ref: '#/definitions/types.Phone'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  types.Phone:
+    properties:
+      phone_id:
+        type: string
+      phone_number:
+        type: integer
+    type: object
+  types.UpdateCustomerRequestModel:
+    properties:
+      address:
+        items:
+          $ref: '#/definitions/types.Address'
+        type: array
+      email:
+        additionalProperties:
+          type: string
+        type: object
+      first_name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        maxLength: 50
+        minLength: 2
+        type: string
+      password:
+        items:
+          type: integer
+        type: array
+      phone:
+        items:
+          $ref: '#/definitions/types.Phone'
+        type: array
+    required:
+    - email
+    type: object
+info:
+  contact: {}
+paths:
+  /customer/:
+    post:
+      consumes:
+      - application/json
+      description: Create customer from payload
+      parameters:
+      - description: Customer payload
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateCustomerRequestModel'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new customer
+      tags:
+      - customers
+  /customer/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a customer by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete customer
+      tags:
+      - customers
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a customer by its ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CustomerResponseModel'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get customer by ID
+      tags:
+      - customers
+    put:
+      consumes:
+      - application/json
+      description: Update customer by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Customer payload
+        in: body
+        name: customer
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateCustomerRequestModel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.CustomerResponseModel'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update customer
+      tags:
+      - customers
+  /customer/list:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of customers
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List customers with pagination
+      tags:
+      - customers
+swagger: "2.0"
