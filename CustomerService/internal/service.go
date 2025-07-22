@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
@@ -29,9 +30,12 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 
 	customer, err := s.repo.GetByID(ctx, objectID)
 	if err != nil {
-		return nil, NewNotFound(fmt.Sprintf("customer not found for ID: %s", id))
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, NewNotFound(fmt.Sprintf("customer not found for ID: %s", id))
+		}
+		return nil, NewInternal(err.Error())
 	}
-	// TODO: errorlar ilgili katmana alıncak
+
 	return ToCustomerResponse(customer), nil
 }
 
