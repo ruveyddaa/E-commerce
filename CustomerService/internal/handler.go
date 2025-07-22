@@ -9,6 +9,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// @title Customer Service API
+// @version 1.0
+// @description API for managing customer data
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
 type Handler struct {
 	service *Service
 }
@@ -32,7 +39,9 @@ func NewHandler(e *echo.Echo, service *Service) {
 // @Produce json
 // @Param id path string true "Customer ID"
 // @Success 200 {object} types.CustomerResponseModel
-// @Failure 404 {object} map[string]string
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "Customer not found"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /customer/{id} [get]
 func (h *Handler) GetByID(c echo.Context) error {
 	id := c.Param("id")
@@ -57,8 +66,9 @@ func (h *Handler) GetByID(c echo.Context) error {
 // @Accept json
 // @Produce json
 // @Param customer body types.CreateCustomerRequestModel true "Customer to create"
-// @Success 201 {object} map[string]interface{}
-// @Failure 400 {object} map[string]string
+// @Success 201 {object} map[string]interface{} "Returns created customer ID"
+// @Failure 400 {object} map[string]string "Invalid request body"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /customer/ [post]
 func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateCustomerRequestModel
@@ -86,7 +96,9 @@ func (h *Handler) Create(c echo.Context) error {
 // @Param id path string true "Customer ID"
 // @Param customer body types.UpdateCustomerRequestModel true "Customer data to update"
 // @Success 200 {object} types.CustomerResponseModel
-// @Failure 400,500 {object} string
+// @Failure 400 {object} map[string]string "Invalid ID format or request body"
+// @Failure 404 {object} map[string]string "Customer not found"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /customer/{id} [put]
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
@@ -113,7 +125,9 @@ func (h *Handler) Update(c echo.Context) error {
 // @Produce json
 // @Param id path string true "Customer ID"
 // @Success 204 "No Content"
-// @Failure 400,404 {object} map[string]string
+// @Failure 400 {object} map[string]string "Invalid ID format"
+// @Failure 404 {object} map[string]string "Customer not found"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /customer/{id} [delete]
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
@@ -129,10 +143,10 @@ func (h *Handler) Delete(c echo.Context) error {
 // @Tags customers
 // @Accept json
 // @Produce json
-// @Param page query int false "Page number"
+// @Param page query int false "Page number" default(1)
 // @Param limit query int false "Number of items per page"
-// @Success 200 {object} map[string]interface{}
-// @Failure 500 {object} map[string]string
+// @Success 200 {object} map[string]interface{} "Returns list of customers"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /customer/list [get]
 func (h *Handler) GetListCustomer(c echo.Context) error {
 	params := types.Pagination{
