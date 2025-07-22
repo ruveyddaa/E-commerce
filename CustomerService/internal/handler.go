@@ -26,7 +26,7 @@ func NewHandler(e *echo.Echo, service *Service) {
 
 // GetByID godoc
 // @Summary Get customer by ID
-// @Description Retrieve a customer by its ID
+// @Description Get a customer by its unique ID
 // @Tags customers
 // @Accept json
 // @Produce json
@@ -52,11 +52,11 @@ func (h *Handler) GetByID(c echo.Context) error {
 
 // Create godoc
 // @Summary Create a new customer
-// @Description Create customer from payload
+// @Description Create a new customer with the given data
 // @Tags customers
 // @Accept json
 // @Produce json
-// @Param customer body types.CreateCustomerRequestModel true "Customer payload"
+// @Param customer body types.CreateCustomerRequestModel true "Customer to create"
 // @Success 201 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Router /customer/ [post]
@@ -78,13 +78,13 @@ func (h *Handler) Create(c echo.Context) error {
 }
 
 // Update godoc
-// @Summary Update customer
-// @Description Update customer by ID
+// @Summary Update an existing customer
+// @Description Update a customer with the given ID
 // @Tags customers
 // @Accept json
 // @Produce json
 // @Param id path string true "Customer ID"
-// @Param customer body types.UpdateCustomerRequestModel true "Customer payload"
+// @Param customer body types.UpdateCustomerRequestModel true "Customer data to update"
 // @Success 200 {object} types.CustomerResponseModel
 // @Failure 400,500 {object} string
 // @Router /customer/{id} [put]
@@ -106,8 +106,8 @@ func (h *Handler) Update(c echo.Context) error {
 }
 
 // Delete godoc
-// @Summary Delete customer
-// @Description Delete a customer by ID
+// @Summary Delete a customer by ID
+// @Description Delete a customer from the system
 // @Tags customers
 // @Accept json
 // @Produce json
@@ -130,7 +130,7 @@ func (h *Handler) Delete(c echo.Context) error {
 // @Accept json
 // @Produce json
 // @Param page query int false "Page number"
-// @Param limit query int false "Page size"
+// @Param limit query int false "Number of items per page"
 // @Success 200 {object} map[string]interface{}
 // @Failure 500 {object} map[string]string
 // @Router /customer/list [get]

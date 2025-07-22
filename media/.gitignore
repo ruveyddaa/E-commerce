@@ -2,5 +2,5 @@
 *
 # Except this file
 !.gitignore
-
+!docs/
 .env
