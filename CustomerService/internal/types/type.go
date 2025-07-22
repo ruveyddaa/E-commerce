@@ -7,7 +7,7 @@ import (
 )
 
 type CreateCustomerRequestModel struct {
-	FirstName string            `bson:"first_name" json:"first_name" validate:"required,min=2,max=50"`
+	FirstName string            `bson:"first_name" json:"FirstName" validate:"required,min=2,max=50"`
 	LastName  string            `bson:"last_name" json:"last_name" validate:"required,min=2,max=50"`
 	Email     map[string]string `bson:"email" json:"email" validate:"required,dive,keys,required,email,endkeys,required"`
 	Phone     []Phone           `bson:"phone" json:"phone" validate:"required,dive"`

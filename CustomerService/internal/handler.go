@@ -28,7 +28,7 @@ func (h *Handler) GetByID(c echo.Context) error {
 
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": "Customer not found"})
+		return c.JSON(http.StatusNotFound, echo.Map{"error": "Customer not found"}) // TODO: rüveyda errorları düzeltecek
 	}
 
 	return c.JSON(http.StatusOK, customer) // frontend'e JSON olarak döner
@@ -50,17 +50,20 @@ func (h *Handler) Create(c echo.Context) error {
 		"createdId": createdID,
 	})
 }
+
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
 
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return Respond(c, NewBadRequest("Invalid request body"), "Failed to bind request")
 	}
+
+	// TODO:  tüm erroları düzeltip ortak işleyiş belirlenicek
 
 	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return Respond(c, err, "Failed to update customer")
 	}
 
 	response := ToCustomerResponse(updatedCustomer)
