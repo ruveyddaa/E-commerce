@@ -47,7 +47,8 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	id, err := s.repo.Create(ctx, customer)
 
 	if err != nil {
-		return "", NewNotFound(fmt.Sprintf("failed to create customer: %v", err))
+		return "", NewInternal(fmt.Sprintf("failed to create customer: %v", err))
+
 	} // todo ezgi
 
 	return id.Hex(), nil
