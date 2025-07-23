@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	echoSwagger "github.com/swaggo/echo-swagger"
 	"tesodev-korpes/CustomerService/cmd"
 	_ "tesodev-korpes/docs"
 	"tesodev-korpes/pkg"
+	"tesodev-korpes/pkg/middleware"
 	"tesodev-korpes/shared/config"
+
+	echoSwagger "github.com/swaggo/echo-swagger"
 
 	"github.com/labstack/echo/v4"
 )
@@ -22,6 +24,12 @@ func main() {
 	fmt.Println("connecting db")
 
 	e := echo.New()
+	e.Use(middleware.RecoveryMiddleware)
+
+	/*e.GET("/panic", func(c echo.Context) error {
+		panic("test panic")
+	})*/
+
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 	// http://localhost:8001/swagger/index.html#/
 
