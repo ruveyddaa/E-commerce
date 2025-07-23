@@ -36,7 +36,7 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 		Phone:     req.Phone,
 		Address:   req.Address,
 		Password:  req.Password,
-		IsActive:  req.IsActive,
+		IsActive:  true,
 	}
 }
 func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustomerRequestModel) *types.Customer {

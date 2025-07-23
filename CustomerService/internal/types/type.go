@@ -13,7 +13,6 @@ type CreateCustomerRequestModel struct {
 	Phone     []Phone           `bson:"phone" json:"phone" validate:"required,dive"`
 	Address   []Address         `bson:"address" json:"address" validate:"required,dive"`
 	Password  []byte            `bson:"password" json:"password" validate:"required"`
-	IsActive  bool              `bson:"is_active" json:"is_active"`
 }
 
 type UpdateCustomerRequestModel struct {

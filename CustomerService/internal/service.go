@@ -43,13 +43,13 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
-	customer.IsActive = true // todo bir defaoltu atılacak
+
 	id, err := s.repo.Create(ctx, customer)
 
 	if err != nil {
 		return "", NewInternal(fmt.Sprintf("failed to create customer: %v", err))
 
-	} // todo ezgi
+	}
 
 	return id.Hex(), nil
 }
