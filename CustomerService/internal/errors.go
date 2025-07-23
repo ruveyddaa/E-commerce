@@ -30,6 +30,7 @@ func NewValidation(msg string) *AppError {
 	return &AppError{Code: http.StatusUnprocessableEntity, Message: msg}
 }
 
+// todo: tutarlı olunmalı yeri değişcek
 func Respond(c echo.Context, err error, fallbackMsg string) error {
 	if appErr, ok := err.(*AppError); ok {
 		return c.JSON(appErr.Code, echo.Map{"error": appErr.Message})
