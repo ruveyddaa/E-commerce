@@ -24,6 +24,7 @@ func main() {
 	fmt.Println("connecting db")
 
 	e := echo.New()
+	e.Use(middleware.LoggingMiddleware)
 	e.Use(middleware.RecoveryMiddleware)
 
 	/*e.GET("/panic", func(c echo.Context) error {
