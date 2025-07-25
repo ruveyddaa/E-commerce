@@ -26,6 +26,7 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.LoggingMiddleware)
 	e.Use(middleware.RecoveryMiddleware)
+	e.Use(middleware.ErrorHandler())
 
 	/*e.GET("/panic", func(c echo.Context) error {
 		panic("test panic")

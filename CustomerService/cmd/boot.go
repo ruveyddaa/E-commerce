@@ -21,7 +21,6 @@ func BootCustomerService(client *mongo.Client, e *echo.Echo) {
 	service := internal.NewService(repo)
 	internal.NewHandler(e, service)
 
-	e.Use(middleware.ErrorHandler())
 	
 	e.Logger.Fatal(e.Start(config.Port))
 
