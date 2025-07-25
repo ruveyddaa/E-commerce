@@ -1,12 +1,14 @@
 package internal
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 	"tesodev-korpes/CustomerService/internal/types"
+	"tesodev-korpes/pkg"
 
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // @title Customer Service API
@@ -49,11 +51,15 @@ func (h *Handler) GetByID(c echo.Context) error {
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 
-		if strings.Contains(err.Error(), "not found") {
-			return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return pkg.NotFound()
 		}
 
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		if err.Error() == "the provided hex string is not a valid ObjectID" {
+			return pkg.BadRequest(err.Error())
+		}
+
+		return pkg.Internal(err)
 	}
 
 	return c.JSON(http.StatusOK, customer)
@@ -73,12 +79,12 @@ func (h *Handler) GetByID(c echo.Context) error {
 func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+		return pkg.BadRequest(err.Error())
 	}
 
 	createdID, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+		return pkg.Internal(err)
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{
@@ -105,13 +111,14 @@ func (h *Handler) Update(c echo.Context) error {
 
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return pkg.BadRequest(err.Error())
 	}
 
 	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return pkg.Internal(err)
 	}
+
 
 	response := ToCustomerResponse(updatedCustomer)
 	return c.JSON(http.StatusOK, response)
@@ -132,7 +139,7 @@ func (h *Handler) Update(c echo.Context) error {
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
-		return Respond(c, err, "Failed to delete customer")
+		return pkg.NotFound()
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -168,7 +175,11 @@ func (h *Handler) GetListCustomer(c echo.Context) error {
 
 	customers, err := h.service.Get(c.Request().Context(), params)
 	if err != nil {
-		return NewInternal(err.Error())
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return pkg.NotFound()
+		}
+
+		return pkg.Internal(err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})

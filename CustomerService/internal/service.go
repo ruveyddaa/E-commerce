@@ -25,15 +25,15 @@ func NewService(repo *Repository) *Service {
 func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerResponseModel, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, NewBadRequest(fmt.Sprintf("invalid ID format: %s", id))
+		return nil, err
 	}
 
 	customer, err := s.repo.GetByID(ctx, objectID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, NewNotFound(fmt.Sprintf("customer not found for ID: %s", id))
+			return nil, fmt.Errorf("customer not found for ID: %s", id)
 		}
-		return nil, NewInternal(err.Error())
+		return nil, fmt.Errorf("failed to get customer: %w", err)
 	}
 
 	return ToCustomerResponse(customer), nil
@@ -47,7 +47,7 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	id, err := s.repo.Create(ctx, customer)
 
 	if err != nil {
-		return "", NewInternal(fmt.Sprintf("failed to create customer: %v", err))
+		return "", fmt.Errorf("failed to create customer: %w", err)
 
 	}
 
@@ -57,21 +57,19 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustomerRequestModel) (*types.Customer, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		//return nil, (fmt.Sprintf("invalid ID format: %w", err))
-		return nil, NewBadRequest(fmt.Sprintf("invalid ID format: %s", id))
+		return nil, fmt.Errorf("invalid ID format: %s", id)
 	}
 	customer, err := s.repo.GetByID(ctx, objectID)
 	// isExist uluştur, dbden glen müşeriyi alma
 	if err != nil {
-		//return nil, fmt.Errorf("customer not found: %w", err)
-		return nil, NewNotFound(fmt.Sprintf("customer not found for ID: %s", id))
+		return nil, fmt.Errorf("customer not found for ID: %s", id)
 	}
 	updatedCustomer := FromUpdateCustomerRequest(customer, req)
 	// todo tek req ten ilerlet
 
 	err = s.repo.Update(ctx, objectID, updatedCustomer)
 	if err != nil {
-		return nil, NewInternal("failed to update customer")
+		return nil, errors.New("failed to update customer")
 	}
 	return updatedCustomer, nil
 }
@@ -79,16 +77,16 @@ func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustom
 func (s *Service) Delete(ctx context.Context, id string) error {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return NewBadRequest(fmt.Sprintf("Invalid id format: %s", id))
+		return fmt.Errorf("Invalid id format: %s", id)
 	}
 
 	_, err = s.repo.GetByID(ctx, objectID)
 	if err != nil {
-		return NewNotFound(fmt.Sprintf("Customer not found with id %s", id))
+		return fmt.Errorf("Customer not found with id %s", id)
 	} // todo gereksiz silinecek
 
 	if err := s.repo.Delete(ctx, objectID); err != nil {
-		return NewInternal(fmt.Sprintf("Failed to delete customer with id %s", id))
+		return fmt.Errorf("Failed to delete customer with id %s", id)
 	}
 	return nil
 }
@@ -103,10 +101,10 @@ func (s *Service) Get(ctx context.Context, params types.Pagination) ([]types.Cus
 	customers, err := s.repo.Get(ctx, findOptions)
 
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, NewNotFound("customer not found")
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, errors.New("customer not found")
 		}
-		return nil, NewInternal(err.Error())
+		return nil, fmt.Errorf("failed to get customers: %w", err)
 	}
 
 	var responses []types.CustomerResponseModel

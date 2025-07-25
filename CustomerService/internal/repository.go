@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
 
@@ -82,14 +83,14 @@ func (r *Repository) Get(ctx context.Context, opt *options.FindOptions) ([]types
 	cursor, err := r.collection.Find(ctx, bson.M{}, opt)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, NewNotFound("customer not found")
+			return nil, fmt.Errorf("document not found")
 		}
-		return nil, NewInternal(err.Error())
+		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	if err = cursor.All(ctx, &customers); err != nil {
-		return nil, NewInternal(err.Error())
+		return nil, err
 	}
 
 	return customers, nil
