@@ -2,13 +2,13 @@ package internal
 
 import (
 	"errors"
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/CustomerService/internal/types"
 	"tesodev-korpes/pkg"
-
-	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/mongo"
+	_ "tesodev-korpes/pkg/middleware"
 )
 
 // @title Customer Service API
@@ -46,6 +46,7 @@ func NewHandler(e *echo.Echo, service *Service) {
 // @Failure 500 {object} map[string]string "Internal server error"
 // @Router /customer/{id} [get]
 func (h *Handler) GetByID(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string) //ekledim
 	id := c.Param("id")
 
 	customer, err := h.service.GetByID(c.Request().Context(), id)
@@ -58,10 +59,10 @@ func (h *Handler) GetByID(c echo.Context) error {
 		if err.Error() == "the provided hex string is not a valid ObjectID" {
 			return pkg.BadRequest(err.Error())
 		}
-
+		pkg.LogErrorWithCorrelation(err, correlationID) //ekledim
 		return pkg.Internal(err)
 	}
-
+	pkg.LogInfoWithCorrelation("Customer found", correlationID) //ekledim
 	return c.JSON(http.StatusOK, customer)
 }
 
@@ -118,7 +119,6 @@ func (h *Handler) Update(c echo.Context) error {
 	if err != nil {
 		return pkg.Internal(err)
 	}
-
 
 	response := ToCustomerResponse(updatedCustomer)
 	return c.JSON(http.StatusOK, response)

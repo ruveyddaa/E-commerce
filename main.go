@@ -24,6 +24,8 @@ func main() {
 	fmt.Println("connecting db")
 
 	e := echo.New()
+
+	e.Use(middleware.CorrelationIdMiddleware())
 	e.Use(middleware.LoggingMiddleware)
 	e.Use(middleware.RecoveryMiddleware)
 	e.Use(middleware.ErrorHandler())

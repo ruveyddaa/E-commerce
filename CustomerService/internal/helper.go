@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"github.com/google/uuid"
 	"tesodev-korpes/CustomerService/internal/types"
 )
 
@@ -30,6 +31,7 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 		return nil
 	}
 	return &types.Customer{
+		Id:        uuid.New().String(),
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Email:     req.Email,

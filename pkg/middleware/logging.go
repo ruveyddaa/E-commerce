@@ -15,6 +15,9 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		err := next(c)
 
 		stop := time.Now()
+		//ekledim
+		correlationID, _ := c.Get("CorrelationID").(string)
+
 		latency := stop.Sub(start)
 
 		method := c.Request().Method
@@ -28,6 +31,8 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			"status":  status,
 			"latency": latency,
 			"ip":      ip,
+			//ekledim
+			"correlationID": correlationID,
 		}).Info("HTTP isteği loglandı")
 
 		return err

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -22,32 +21,56 @@ func NewRepository(col *mongo.Collection) *Repository {
 	}
 }
 
-func (r *Repository) GetByID(ctx context.Context, id primitive.ObjectID) (*types.Customer, error) {
+/*
+	func (r *Repository) GetByID(ctx context.Context, id string) (*types.Customer, error) {
+		var customer types.Customer
+		err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&customer)
+		if err != nil {
+			return nil, err
+		}
+		return &customer, nil
+	}
+*/
+
+func (r *Repository) GetByID(ctx context.Context, id string) (*types.Customer, error) {
 	var customer types.Customer
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&customer)
+
+	filter := bson.M{"_id": id}
+	err := r.collection.FindOne(ctx, filter).Decode(&customer)
+	// filtreleme dış katmanda olmamalı
 	if err != nil {
 		return nil, err
 	}
+
 	return &customer, nil
 }
 
+/*
 func (r *Repository) Create(ctx context.Context, customer *types.Customer) (primitive.ObjectID, error) {
 
-	result, err := r.collection.InsertOne(ctx, customer)
+		result, err := r.collection.InsertOne(ctx, customer)
 
+		if err != nil {
+			return primitive.NilObjectID, err
+		}
+
+		insertedID, ok := result.InsertedID.(primitive.ObjectID)
+		if !ok {
+			return primitive.NilObjectID, mongo.ErrNilDocument
+		}
+
+		return insertedID, nil
+	}
+*/
+func (r *Repository) Create(ctx context.Context, customer *types.Customer) (string, error) {
+	_, err := r.collection.InsertOne(ctx, customer)
 	if err != nil {
-		return primitive.NilObjectID, err
+		return "", err
 	}
-
-	insertedID, ok := result.InsertedID.(primitive.ObjectID)
-	if !ok {
-		return primitive.NilObjectID, mongo.ErrNilDocument
-	}
-
-	return insertedID, nil
+	return customer.Id, nil
 }
 
-func (r *Repository) Update(ctx context.Context, id primitive.ObjectID, customer *types.Customer) error {
+func (r *Repository) Update(ctx context.Context, id string, customer *types.Customer) error {
 	filter := bson.M{"_id": id}
 	update := bson.M{
 		"$set": bson.M{ // todo mongo operatorlerle çözebilrisin
@@ -66,7 +89,7 @@ func (r *Repository) Update(ctx context.Context, id primitive.ObjectID, customer
 	return err
 }
 
-func (r *Repository) Delete(ctx context.Context, id primitive.ObjectID) error {
+func (r *Repository) Delete(ctx context.Context, id string) error {
 	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
 		return err
