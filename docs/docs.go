@@ -17,6 +17,11 @@ const docTemplate = `{
     "paths": {
         "/customer/": {
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Create a new customer with the given data",
                 "consumes": [
                     "application/json"
@@ -41,19 +46,22 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Returns created customer ID",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid request body",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     }
                 }
@@ -61,6 +69,11 @@ const docTemplate = `{
         },
         "/customer/list": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Retrieve a paginated list of customers",
                 "consumes": [
                     "application/json"
@@ -75,6 +88,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "default": 1,
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
@@ -88,19 +102,16 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Returns list of customers",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     }
                 }
@@ -108,6 +119,11 @@ const docTemplate = `{
         },
         "/customer/{id}": {
             "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Get a customer by its unique ID",
                 "consumes": [
                     "application/json"
@@ -135,18 +151,32 @@ const docTemplate = `{
                             "$ref": "#/definitions/types.CustomerResponseModel"
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "400": {
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     }
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Update a customer with the given ID",
                 "consumes": [
                     "application/json"
@@ -184,20 +214,31 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid ID format or request body",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
                 "description": "Delete a customer from the system",
                 "consumes": [
                     "application/json"
@@ -223,21 +264,21 @@ const docTemplate = `{
                         "description": "No Content"
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid ID format",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     },
                     "404": {
-                        "description": "Not Found",
+                        "description": "Customer not found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
                         }
                     }
                 }
@@ -245,6 +286,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "pkg.AppError": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "types.Address": {
             "type": "object",
             "properties": {
@@ -289,9 +341,6 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
-                },
-                "is_active": {
-                    "type": "boolean"
                 },
                 "last_name": {
                     "type": "string",
