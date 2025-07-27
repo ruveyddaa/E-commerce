@@ -1,8 +1,9 @@
 package internal
 
 import (
-	"github.com/google/uuid"
 	"tesodev-korpes/CustomerService/internal/types"
+
+	"github.com/google/uuid"
 )
 
 // here is an example what this helper method that does data casting from db model to response model
@@ -26,17 +27,37 @@ func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 		UpdatedAt: customer.UpdatedAt,
 	}
 }
+
 func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Customer {
 	if req == nil {
 		return nil
 	}
+
+	addresses := make([]types.Address, len(req.Address))
+	for i, addr := range req.Address {
+		addresses[i] = types.Address{
+			Id:      uuid.New().String(),
+			City:    addr.City,
+			State:   addr.State,
+			ZipCode: addr.ZipCode,
+		}
+	}
+
+	phones := make([]types.Phone, len(req.Phone))
+	for i, ph := range req.Phone {
+		phones[i] = types.Phone{
+			Id:          uuid.New().String(),
+			PhoneNumber: ph.PhoneNumber,
+		}
+	}
+
 	return &types.Customer{
 		Id:        uuid.New().String(),
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Email:     req.Email,
-		Phone:     req.Phone,
-		Address:   req.Address,
+		Phone:     phones,
+		Address:   addresses,
 		Password:  req.Password,
 		IsActive:  true,
 	}
