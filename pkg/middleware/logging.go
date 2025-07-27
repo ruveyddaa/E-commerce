@@ -15,7 +15,7 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		err := next(c)
 
 		stop := time.Now()
-		//ekledim
+
 		correlationID, _ := c.Get("CorrelationID").(string)
 
 		latency := stop.Sub(start)
@@ -26,12 +26,11 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		ip := c.RealIP()
 
 		logrus.WithFields(logrus.Fields{
-			"method":  method,
-			"path":    path,
-			"status":  status,
-			"latency": latency,
-			"ip":      ip,
-			//ekledim
+			"method":        method,
+			"path":          path,
+			"status":        status,
+			"latency":       latency,
+			"ip":            ip,
 			"correlationID": correlationID,
 		}).Info("HTTP isteği loglandı")
 

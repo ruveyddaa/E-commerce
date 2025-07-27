@@ -62,23 +62,23 @@ func toAppError(err error) *pkg.AppError {
 	return pkg.Internal(err)
 }
 
-/*
-	func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
-		requestID := c.Response().Header().Get(echo.HeaderXRequestID)
-		if requestID == "" {
-			requestID = "not-available"
-		}
-
-		var resp APIErrorResponse
-		resp.Error.Code = err.Code
-		resp.Error.Message = err.Message
-		resp.RequestID = requestID
-		resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
-		return resp
-	}
-*/
 func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
-	requestID := c.Get("CorrelationID") // 👈 burada context'ten al!
+	requestID := c.Response().Header().Get(echo.HeaderXRequestID)
+	if requestID == "" {
+		requestID = "not-available"
+	}
+
+	var resp APIErrorResponse
+	resp.Error.Code = err.Code
+	resp.Error.Message = err.Message
+	resp.RequestID = requestID
+	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
+	return resp
+}
+
+/*
+func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
+	requestID := c.Get("CorrelationID")
 	correlationID, ok := requestID.(string)
 	if !ok {
 		correlationID = "not-available"
@@ -91,3 +91,4 @@ func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
 	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return resp
 }
+*/

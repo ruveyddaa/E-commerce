@@ -21,48 +21,19 @@ func NewRepository(col *mongo.Collection) *Repository {
 	}
 }
 
-/*
-	func (r *Repository) GetByID(ctx context.Context, id string) (*types.Customer, error) {
-		var customer types.Customer
-		err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&customer)
-		if err != nil {
-			return nil, err
-		}
-		return &customer, nil
-	}
-*/
-
 func (r *Repository) GetByID(ctx context.Context, id string) (*types.Customer, error) {
 	var customer types.Customer
-
 	filter := bson.M{"_id": id}
 	err := r.collection.FindOne(ctx, filter).Decode(&customer)
-	// filtreleme dış katmanda olmamalı
 	if err != nil {
 		return nil, err
 	}
-
 	return &customer, nil
 }
 
-/*
-func (r *Repository) Create(ctx context.Context, customer *types.Customer) (primitive.ObjectID, error) {
-
-		result, err := r.collection.InsertOne(ctx, customer)
-
-		if err != nil {
-			return primitive.NilObjectID, err
-		}
-
-		insertedID, ok := result.InsertedID.(primitive.ObjectID)
-		if !ok {
-			return primitive.NilObjectID, mongo.ErrNilDocument
-		}
-
-		return insertedID, nil
-	}
-*/
+// todo type assertion gerekebilir
 func (r *Repository) Create(ctx context.Context, customer *types.Customer) (string, error) {
+
 	_, err := r.collection.InsertOne(ctx, customer)
 	if err != nil {
 		return "", err
