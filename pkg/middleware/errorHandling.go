@@ -10,7 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// APIErrorResponse is the standard JSON structure to be returned to the client.
 type APIErrorResponse struct {
 	Error struct {
 		Code    string `json:"code"`
@@ -20,7 +19,6 @@ type APIErrorResponse struct {
 	Timestamp string `json:"timestamp"`
 }
 
-// ErrorHandler creates the main error handler middleware for the project using Echo.
 func ErrorHandler() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -54,6 +52,8 @@ func toAppError(err error) *pkg.AppError {
 			return pkg.NotFound()
 		case http.StatusBadRequest:
 			return pkg.BadRequest(fmt.Sprintf("%v", httpErr.Message))
+		case http.StatusInternalServerError:
+			return pkg.Internal(err)
 		default:
 			return pkg.Wrap(httpErr, httpErr.Code, "INTERNAL_FRAMEWORK_ERROR", "A framework-related error occurred.")
 		}
@@ -75,20 +75,3 @@ func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
 	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return resp
 }
-
-/*
-func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
-	requestID := c.Get("CorrelationID")
-	correlationID, ok := requestID.(string)
-	if !ok {
-		correlationID = "not-available"
-	}
-
-	var resp APIErrorResponse
-	resp.Error.Code = err.Code
-	resp.Error.Message = err.Message
-	resp.RequestID = correlationID // 👈 artık doğru correlation ID'yi koyuyorsun
-	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
-	return resp
-}
-*/
