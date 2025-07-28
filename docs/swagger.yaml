@@ -1,4 +1,11 @@
 definitions:
+  pkg.AppError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
   types.Address:
     properties:
       address_id:
@@ -24,8 +31,6 @@ definitions:
         additionalProperties:
           type: string
         type: object
-      is_active:
-        type: boolean
       last_name:
         maxLength: 50
         minLength: 2
@@ -130,16 +135,20 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: Returns created customer ID
           schema:
             additionalProperties: true
             type: object
         "400":
-          description: Bad Request
+          description: Invalid request body
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.AppError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pkg.AppError'
+      security:
+      - ApiKeyAuth: []
       summary: Create a new customer
       tags:
       - customers
@@ -160,17 +169,19 @@ paths:
         "204":
           description: No Content
         "400":
-          description: Bad Request
+          description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.AppError'
         "404":
-          description: Not Found
+          description: Customer not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.AppError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pkg.AppError'
+      security:
+      - ApiKeyAuth: []
       summary: Delete a customer by ID
       tags:
       - customers
@@ -191,12 +202,20 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/types.CustomerResponseModel'
-        "404":
-          description: Not Found
+        "400":
+          description: Invalid ID format
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.AppError'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/pkg.AppError'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/pkg.AppError'
+      security:
+      - ApiKeyAuth: []
       summary: Get customer by ID
       tags:
       - customers
@@ -224,13 +243,19 @@ paths:
           schema:
             $ref: '#/definitions/types.CustomerResponseModel'
         "400":
-          description: Bad Request
+          description: Invalid ID format or request body
           schema:
-            type: string
+            $ref: '#/definitions/pkg.AppError'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/pkg.AppError'
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            type: string
+            $ref: '#/definitions/pkg.AppError'
+      security:
+      - ApiKeyAuth: []
       summary: Update an existing customer
       tags:
       - customers
@@ -240,7 +265,8 @@ paths:
       - application/json
       description: Retrieve a paginated list of customers
       parameters:
-      - description: Page number
+      - default: 1
+        description: Page number
         in: query
         name: page
         type: integer
@@ -252,16 +278,16 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Returns list of customers
           schema:
             additionalProperties: true
             type: object
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/pkg.AppError'
+      security:
+      - ApiKeyAuth: []
       summary: List customers with pagination
       tags:
       - customers
