@@ -9,8 +9,8 @@ type Order struct {
 	ShippingAddress Address       `bson:"shipping_address" json:"shipping_address"`
 	BillingAddress  Address       `bson:"billing_address" json:"billing_address"`
 	TotalPrice      float64       `bson:"total_price" json:"total_price"`
-	Status          OrderStatus   `bson:"status" json:"status"`                 // örn: pending, shipped, delivered, cancelled
-	PaymentStatus   PaymentStatus `bson:"payment_status" json:"payment_status"` // örn: paid, unpaid, refunded
+	Status          OrderStatus   `bson:"status" json:"status"`
+	PaymentStatus   PaymentStatus `bson:"payment_status" json:"payment_status"`
 	CreatedAt       time.Time     `bson:"created_at" json:"created_at"`
 	UpdatedAt       time.Time     `bson:"updated_at" json:"updated_at"`
 	IsActive        bool          `bson:"is_active" json:"is_active"`
