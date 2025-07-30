@@ -5,7 +5,7 @@ import (
 )
 
 type Customer struct {
-	Id        string            `bson:"_id,omitempty" json:"id"` //TODO: id leri uuid olarak değiştirilecek (objectID -> string)
+	Id        string            `bson:"_id,omitempty" json:"id"`
 	Password  []byte            `bson:"password" json:"password"`
 	FirstName string            `bson:"first_name" json:"first_name"`
 	LastName  string            `bson:"last_name" json:"last_name"`
