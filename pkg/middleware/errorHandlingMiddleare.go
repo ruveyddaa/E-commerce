@@ -87,7 +87,7 @@ func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
 	var resp APIErrorResponse
 	resp.Error.Code = err.Code
 	resp.Error.Message = err.Message
-	resp.RequestID = correlationID // 👈 artık doğru correlation ID'yi koyuyorsun
+	resp.RequestID = correlationID
 	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return resp
 }
