@@ -39,16 +39,9 @@ func main() {
 	customerEcho.GET("/swagger/*", echoSwagger.WrapHandler)
 	// http://localhost:8001/swagger/index.html#/
 
-	switch input {
-	case "customer":
-		cmd.BootCustomerService(client, customerEcho)
-	case "order":
+	cmd.BootCustomerService(client, customerEcho)
 
-		ordercmd.BootOrderService(client, orderEcho)
-
-	default:
-		panic("Invalid input. Use 'customer', 'order', or 'both'.")
-	}
+	ordercmd.BootOrderService(client, orderEcho)
 
 	//challenge : after you create a func boot order service, manage somehow to run specific project
 	//description : when you give an input here it should look that input and boot THAT specific project
