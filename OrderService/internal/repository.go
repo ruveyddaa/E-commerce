@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Repository struct {
@@ -104,4 +105,20 @@ func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status typ
 	}
 
 	return nil
+}
+
+func (r *Repository) GetAllOrders(ctx context.Context, findOptions *options.FindOptions) ([]types.Order, error) {
+	var orders []types.Order
+
+	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err := cursor.All(ctx, &orders); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }

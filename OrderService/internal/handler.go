@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,6 +33,7 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.DELETE("/cancel/:id", handler.CancelOrder)
 	g.PUT("/:id/ship", handler.ShipOrder)
 	g.PUT("/:id/deliver", handler.DeliverOrder)
+	g.GET("/list", handler.GetAllOrders)
 	//g.PATCH("/cancel/:id", handler.CancelOrder)
 
 }
@@ -164,4 +166,35 @@ func (h *Handler) DeliverOrder(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
+}
+
+func (h *Handler) GetAllOrders(c echo.Context) error {
+	params := types.Pagination{
+		Page:  1,
+		Limit: 10,
+	}
+
+	if p := c.QueryParam("page"); p != "" {
+		if pageInt, err := strconv.Atoi(p); err == nil && pageInt > 0 {
+			params.Page = pageInt
+		}
+	}
+
+	if l := c.QueryParam("limit"); l != "" {
+		if limitInt, err := strconv.Atoi(l); err == nil && limitInt > 0 {
+			params.Limit = limitInt
+		}
+	}
+
+	orders, err := h.service.GetAllOrders(c.Request().Context(), params)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return pkg.NotFound()
+		}
+
+		return pkg.Internal(err)
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})
+
 }
