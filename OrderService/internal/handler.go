@@ -47,10 +47,7 @@ func (h *Handler) GetByID(c echo.Context) error {
 		return pkg.Internal(errors.New("failed to fetch customer info"))
 	}
 
-	response := types.OrderWithCustomerResponse{
-		OrderResponseModel: *order,
-		Customer:           customer,
-	}
+	response := ToOrderWithCustomerResponse(order, customer)
 
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
 	return c.JSON(http.StatusOK, response)
