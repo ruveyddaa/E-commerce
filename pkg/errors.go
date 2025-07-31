@@ -83,7 +83,7 @@ func Internal(err error) *AppError {
 	return Wrap(err, http.StatusInternalServerError, CodeInternalError, "An unexpected error occurred in the system.")
 }
 
-func InvalidOrderStateWithStatus(currentStatus string) *AppError {
-	message := fmt.Sprintf("Cannot cancel order while it is in '%s' status", currentStatus)
+func InvalidOrderStateWithStatus(action, currentStatus string) *AppError {
+	message := fmt.Sprintf("Cannot %s order while it is in '%s' status", action, currentStatus)
 	return New(http.StatusConflict, CodeOrderStateConflict, message)
 }

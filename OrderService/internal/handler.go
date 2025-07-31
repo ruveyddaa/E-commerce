@@ -13,6 +13,13 @@ import (
 	"tesodev-korpes/pkg"
 )
 
+// @title Order Service API
+// @version 1.0
+// @description API for managing order data
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
 type Handler struct {
 	service *Service
 }
@@ -23,6 +30,9 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.POST("", handler.Create) // ← düzelt!
 	g.GET("/:id", handler.GetByID)
 	g.DELETE("/:id", handler.Delete)
+	g.PUT("/:id/ship", handler.ShipOrder)
+	g.PUT("/:id/deliver", handler.DeliverOrder)
+
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
@@ -90,6 +100,7 @@ func (h *Handler) Delete(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
 func (h *Handler) Create(c echo.Context) error {
 	var req types.Order
 
@@ -106,4 +117,42 @@ func (h *Handler) Create(c echo.Context) error {
 		"message":   "Order başarıyla oluşturuldu",
 		"createdId": createdID,
 	})
+}
+
+func (h *Handler) ShipOrder(c echo.Context) error {
+	id := c.Param("id")
+
+	err := h.service.ShipOrder(c.Request().Context(), id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order shipped successfully"})
+}
+
+// DeliverOrder godoc
+// @Summary Deliver an order
+// @Description Changes the order status to DELIVERED if current status is SHIPPED
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Success 200 {object} map[string]string "Order delivered successfully"
+// @Failure 400 {object} pkg.AppError "Invalid ID format"
+// @Failure 404 {object} pkg.AppError "Order not found"
+// @Failure 409 {object} pkg.AppError "Invalid order state for delivery"
+// @Failure 500 {object} pkg.AppError "Internal server error"
+// @Security ApiKeyAuth
+// @Router /order/{id}/deliver [put]
+func (h *Handler) DeliverOrder(c echo.Context) error {
+	id := c.Param("id")
+
+	err := h.service.DeliverOrder(c.Request().Context(), id)
+	if err != nil {
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
+		}
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
 }
