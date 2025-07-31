@@ -19,6 +19,7 @@ type Repository struct {
 func NewRepository(collection *mongo.Collection) *Repository {
 	return &Repository{collection: collection}
 }
+
 func (r *Repository) GetByID(ctx context.Context, id string) (*types.Order, error) {
 	// 1. String ID'yi MongoDB ObjectID'ye dönüştür
 	objectID, err := primitive.ObjectIDFromHex(id)
@@ -59,6 +60,7 @@ func (r *Repository) Delete(id string) error {
 
 	return nil
 }
+
 func (r *Repository) Create(ctx context.Context, order *types.Order) (string, error) {
 	res, err := r.collection.InsertOne(ctx, order)
 	if err != nil {
@@ -68,4 +70,30 @@ func (r *Repository) Create(ctx context.Context, order *types.Order) (string, er
 	// ObjectID'yi string olarak döndür
 	id := res.InsertedID.(primitive.ObjectID).Hex()
 	return id, nil
+}
+
+func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status types.OrderStatus) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return fmt.Errorf("invalid id format: %w", err)
+	}
+
+	filter := bson.M{"_id": objectID}
+	update := bson.M{
+		"$set": bson.M{
+			"status":     status,
+			"updated_at": time.Now(),
+		},
+	}
+
+	res, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	if res.MatchedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+
+	return nil
 }
