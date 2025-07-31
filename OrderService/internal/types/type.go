@@ -26,3 +26,8 @@ type Pagination struct {
 	Page  int
 	Limit int
 }
+
+type OrderWithCustomerResponse struct {
+	OrderResponseModel
+	Customer interface{} `json:"customer,omitempty"`
+}

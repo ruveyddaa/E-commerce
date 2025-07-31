@@ -25,12 +25,6 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.DELETE("/:id", handler.Delete)
 }
 
-// Order + Customer JSON response modeli
-type OrderWithCustomerResponse struct {
-	types.OrderResponseModel
-	Customer interface{} `json:"customer,omitempty"`
-}
-
 func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
@@ -53,7 +47,7 @@ func (h *Handler) GetByID(c echo.Context) error {
 		return pkg.Internal(errors.New("failed to fetch customer info"))
 	}
 
-	response := OrderWithCustomerResponse{
+	response := types.OrderWithCustomerResponse{
 		OrderResponseModel: *order,
 		Customer:           customer,
 	}
