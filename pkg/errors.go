@@ -6,22 +6,23 @@ import (
 )
 
 const (
-	CodeUnknown         = "UNKNOWN"
-	CodeInvalidInput    = "INVALID_INPUT"
-	CodeValidation      = "VALIDATION_FAILED"
-	CodeNotFound        = "NOT_FOUND"
-	CodeUnauthorized    = "UNAUTHORIZED"
-	CodeForbidden       = "FORBIDDEN"
-	CodeConflict        = "CONFLICT" 
-	CodeInternalError   = "INTERNAL_ERROR"
-	CodeServiceDown     = "SERVICE_UNAVAILABLE"
+	CodeUnknown            = "UNKNOWN"
+	CodeInvalidInput       = "INVALID_INPUT"
+	CodeValidation         = "VALIDATION_FAILED"
+	CodeNotFound           = "NOT_FOUND"
+	CodeUnauthorized       = "UNAUTHORIZED"
+	CodeForbidden          = "FORBIDDEN"
+	CodeConflict           = "CONFLICT"
+	CodeInternalError      = "INTERNAL_ERROR"
+	CodeServiceDown        = "SERVICE_UNAVAILABLE"
+	CodeOrderStateConflict = "ORDER_STATE_CONFLICT"
 )
 
 type AppError struct {
-	HTTPStatus int `json:"-"`
-	Code string `json:"code"`
-	Message string `json:"message"`
-	Err error `json:"-"`
+	HTTPStatus int    `json:"-"`
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	Err        error  `json:"-"`
 }
 
 func (e *AppError) Error() string {
@@ -80,4 +81,9 @@ func Forbidden() *AppError {
 
 func Internal(err error) *AppError {
 	return Wrap(err, http.StatusInternalServerError, CodeInternalError, "An unexpected error occurred in the system.")
+}
+
+func InvalidOrderStateWithStatus(action, currentStatus string) *AppError {
+	message := fmt.Sprintf("Cannot %s order while it is in '%s' status", action, currentStatus)
+	return New(http.StatusConflict, CodeOrderStateConflict, message)
 }
