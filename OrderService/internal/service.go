@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"tesodev-korpes/pkg"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -40,19 +41,54 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderResponseM
 	return ToOrderResponse(order), nil
 }
 
-func (s *Service) DeleteOrderByID(id string) error {
-	if id == "" {
-		return errors.New("id is required")
-	}
-
-	return s.repo.Delete(id)
-}
 func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
 	order.CreatedAt = time.Now()
 	order.UpdatedAt = time.Now()
-	order.IsActive = true
+	//order.IsActive = true
 
 	return s.repo.Create(ctx, order)
+}
+
+func (s *Service) ShipOrder(ctx context.Context, id string) error {
+	order, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("order not found for ID: %s", id)
+		}
+		return err
+	}
+
+	if order.Status != types.OrderOrdered {
+		return pkg.InvalidOrderStateWithStatus("ship", string(order.Status))
+	}
+
+	err = s.repo.UpdateStatusByID(ctx, id, types.OrderShipped)
+	if err != nil {
+		return fmt.Errorf("failed to update order status to SHIPPED: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) DeliverOrder(ctx context.Context, id string) error {
+	order, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("order not found for ID: %s", id)
+		}
+		return err
+	}
+
+	if order.Status != types.OrderShipped {
+		return pkg.InvalidOrderStateWithStatus("deliver", string(order.Status))
+	}
+
+	err = s.repo.UpdateStatusByID(ctx, id, types.OrderDelivered)
+	if err != nil {
+		return fmt.Errorf("failed to update order status to DELIVERED: %w", err)
+	}
+
+	return nil
 }
 
 func calculateTotalPrice(items []types.OrderItem) float64 {
@@ -61,4 +97,26 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 		total += float64(item.Quantity) * item.UnitPrice
 	}
 	return total
+}
+func (s *Service) CancelOrder(ctx context.Context, id string) error {
+	order, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("order not found for ID: %s", id)
+		}
+		return err
+	}
+
+	switch order.Status {
+	case types.OrderShipped, types.OrderDelivered, types.OrderCanceled:
+		return pkg.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
+
+	}
+
+	err = s.repo.UpdateStatusByID(ctx, id, types.OrderCanceled)
+	if err != nil {
+		return fmt.Errorf("failed to cancel order: %w", err)
+	}
+
+	return nil
 }

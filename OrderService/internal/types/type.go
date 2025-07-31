@@ -19,7 +19,7 @@ type OrderResponseModel struct {
 	Status          OrderStatus `json:"status"`
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
-	IsActive        bool        `json:"is_active"`
+	//IsActive        bool        `json:"is_active"`
 }
 
 type Pagination struct {
