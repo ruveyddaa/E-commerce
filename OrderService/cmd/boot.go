@@ -18,7 +18,7 @@ func BootOrderService(client *mongo.Client, e *echo.Echo) {
 	}
 
 	repo := internal.NewRepository(orderCol)
-	service := internal.NewService(repo)
+	service := internal.NewService(repo, "http://localhost:8001")
 	internal.NewHandler(e, service)
 
 	e.Logger.Fatal(e.Start(config.Port))

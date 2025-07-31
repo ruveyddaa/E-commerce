@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,12 +15,19 @@ import (
 )
 
 type Service struct {
-	repo *Repository
+	repo               *Repository
+	httpClient         *http.Client
+	customerServiceURL string
 }
 
-func NewService(repo *Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo *Repository, customerServiceURL string) *Service {
+	return &Service{
+		repo:               repo,
+		httpClient:         &http.Client{Timeout: 5 * time.Second},
+		customerServiceURL: customerServiceURL,
+	}
 }
+
 func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderResponseModel, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -45,4 +53,12 @@ func (s *Service) Create(ctx context.Context, order *types.Order) (string, error
 	order.IsActive = true
 
 	return s.repo.Create(ctx, order)
+}
+
+func calculateTotalPrice(items []types.OrderItem) float64 {
+	var total float64
+	for _, item := range items {
+		total += float64(item.Quantity) * item.UnitPrice
+	}
+	return total
 }
