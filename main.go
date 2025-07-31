@@ -22,7 +22,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("connecting db")
-	// deneme
 
 	// === CUSTOMER SERVICE ===
 	customerEcho := echo.New()
