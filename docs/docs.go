@@ -283,6 +283,70 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/order/{id}/deliver": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Changes the order status to DELIVERED if current status is SHIPPED",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Deliver an order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order delivered successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "409": {
+                        "description": "Invalid order state for delivery",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/pkg.AppError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -297,7 +361,7 @@ const docTemplate = `{
                 }
             }
         },
-        "types.Address": {
+        "tesodev-korpes_CustomerService_internal_types.Address": {
             "type": "object",
             "properties": {
                 "address_id": {
@@ -333,7 +397,7 @@ const docTemplate = `{
                 "address": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.Address"
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Address"
                     }
                 },
                 "email": {
@@ -367,7 +431,7 @@ const docTemplate = `{
                 "address": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.Address"
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Address"
                     }
                 },
                 "created_at": {
@@ -422,7 +486,7 @@ const docTemplate = `{
                 "address": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.Address"
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Address"
                     }
                 },
                 "email": {
