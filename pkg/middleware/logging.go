@@ -11,7 +11,8 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 
 		start := time.Now()
-
+		method := c.Request().Method
+		path := c.Request().URL.Path
 		err := next(c)
 
 		stop := time.Now()
@@ -20,8 +21,6 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		latency := stop.Sub(start)
 
-		method := c.Request().Method
-		path := c.Request().URL.Path
 		status := c.Response().Status
 		ip := c.RealIP()
 

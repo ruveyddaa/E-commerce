@@ -12,7 +12,7 @@ type Order struct {
 	Status          OrderStatus `bson:"status" json:"status"`
 	CreatedAt       time.Time   `bson:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `bson:"updated_at" json:"updated_at"`
-	//IsActive        bool        `bson:"is_active" json:"is_active"`
+	IsActive        bool        `bson:"is_active" json:"is_active"`
 }
 
 type OrderItem struct {
@@ -27,4 +27,21 @@ type Address struct {
 	City    string `bson:"city" json:"city"`
 	State   string `bson:"state" json:"state"`
 	ZipCode string `bson:"zip_code" json:"zip_code"`
+}
+
+type CustomerResponseModel struct {
+	Id        string            `json:"id" bson:"_id,omitempty"`
+	FirstName string            `json:"first_name" bson:"first_name"`
+	LastName  string            `json:"last_name" bson:"last_name"`
+	Email     map[string]string `json:"email" bson:"email"`
+	Phone     []Phone           `json:"phone" bson:"phone"`
+	Address   []Address         `json:"address" bson:"address"`
+	CreatedAt time.Time         `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at" bson:"updated_at"`
+	IsActive  bool              `json:"is_active" bson:"is_active"`
+}
+
+type Phone struct {
+	Id          string `json:"phone_id" bson:"phone_id,omitempty"`
+	PhoneNumber int    `json:"phone_number" bson:"phone_number"`
 }

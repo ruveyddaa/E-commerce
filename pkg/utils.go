@@ -1,6 +1,9 @@
 package pkg
 
-import "log"
+import (
+	"github.com/google/uuid"
+	"log"
+)
 
 func LogErrorWithCorrelation(err error, correlationID string) {
 
@@ -9,4 +12,9 @@ func LogErrorWithCorrelation(err error, correlationID string) {
 }
 func LogInfoWithCorrelation(message string, correlationID string) {
 	log.Printf("[CorrelationID: %s] %s", correlationID, message)
+}
+
+func IsValidUUID(id string) bool {
+	_, err := uuid.Parse(id)
+	return err == nil
 }
