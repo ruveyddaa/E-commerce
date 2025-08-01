@@ -98,6 +98,7 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 	}
 	return total
 }
+
 func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
