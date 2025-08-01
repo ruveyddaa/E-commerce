@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Service struct {
@@ -24,7 +25,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 	customer, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, fmt.Errorf("customer not found for ID: %s", id)
+			return nil, err
 		}
 		return nil, fmt.Errorf("failed to get customer: %w", err)
 	}
@@ -33,6 +34,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 }
 
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
+
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
@@ -48,6 +50,7 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 }
 
 func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustomerRequestModel) (*types.Customer, error) {
+
 	customer, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("customer not found for ID: %s", id)

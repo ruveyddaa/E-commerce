@@ -2,13 +2,14 @@ package internal
 
 import (
 	"errors"
-	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/CustomerService/internal/types"
 	"tesodev-korpes/pkg"
 	_ "tesodev-korpes/pkg/middleware"
+
+	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // @title Customer Service API
@@ -47,23 +48,22 @@ func NewHandler(e *echo.Echo, service *Service) {
 // @Failure 500 {object} pkg.AppError "Internal server error"
 // @Router /customer/{id} [get]
 func (h *Handler) GetByID(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string) //ekledim
+	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
+	if isValidID := pkg.IsValidUUID(id); !isValidID {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+	}
 
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound()
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
 		}
-
-		if err.Error() == "the provided hex string is not a valid ObjectID" {
-			return pkg.BadRequest(err.Error())
-		}
-		pkg.LogErrorWithCorrelation(err, correlationID) //ekledim
-		return pkg.Internal(err)
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
 	}
-	pkg.LogInfoWithCorrelation("Customer found", correlationID) //ekledim
+	pkg.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
 }
 
@@ -82,12 +82,12 @@ func (h *Handler) GetByID(c echo.Context) error {
 func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return pkg.BadRequest(err.Error())
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400102])
 	}
 
 	createdID, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
-		return pkg.Internal(err)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101]])
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{
@@ -112,15 +112,16 @@ func (h *Handler) Create(c echo.Context) error {
 // @Router /customer/{id} [put]
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
-
+	if isValidID := pkg.IsValidUUID(id); !isValidID {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+	}
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return pkg.BadRequest(err.Error())
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400102])
 	}
 
 	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
-	if err != nil {
-		return pkg.Internal(err)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
 	}
 
 	response := ToCustomerResponse(updatedCustomer)
@@ -142,8 +143,11 @@ func (h *Handler) Update(c echo.Context) error {
 // @Router /customer/{id} [delete]
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
+	if isValidID := pkg.IsValidUUID(id); !isValidID {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+	}
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
-		return pkg.NotFound()
+		return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -181,10 +185,10 @@ func (h *Handler) GetListCustomer(c echo.Context) error {
 	customers, err := h.service.Get(c.Request().Context(), params)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound()
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
 		}
 
-		return pkg.Internal(err)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})
