@@ -8,7 +8,9 @@ import (
 	"tesodev-korpes/pkg"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	// "go.mongodb.org/mongo-driver/mongo/options"
 	"tesodev-korpes/OrderService/internal/types"
@@ -120,4 +122,29 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination) ([]*types.OrderResponseModel, error) {
+	skip := (pagination.Page - 1) * pagination.Limit
+
+	findOptions := options.Find().
+		SetSkip(int64(skip)).
+		SetLimit(int64(pagination.Limit)).
+		SetSort(bson.D{{Key: "created_at", Value: -1}})
+
+	orders, err := s.repo.GetAllOrders(ctx, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	var response []*types.OrderResponseModel
+	for _, order := range orders {
+		resp := ToOrderResponse(&order)
+		if resp != nil {
+			response = append(response, resp)
+		}
+	}
+
+	return response, nil
+
 }
