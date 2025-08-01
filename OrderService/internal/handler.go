@@ -127,7 +127,7 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully"})
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
 }
 
 func (h *Handler) Create(c echo.Context) error {
