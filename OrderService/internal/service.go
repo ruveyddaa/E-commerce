@@ -124,6 +124,27 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	return nil
 }
 
+func (s *Service) DeleteOrder(ctx context.Context, id string) error {
+	order, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return fmt.Errorf("order not found for ID: %s", id)
+		}
+		return err
+	}
+
+	if order.Status != types.OrderDelivered && order.Status != types.OrderCanceled {
+		return pkg.InvalidOrderStateWithStatus("DELETE", string(order.Status))
+	}
+
+	err = s.repo.SoftDeleteByID(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to soft delete order: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination) ([]*types.OrderResponseModel, error) {
 	skip := (pagination.Page - 1) * pagination.Limit
 

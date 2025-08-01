@@ -52,7 +52,6 @@ func (r *Repository) Cancel(id string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"status":     types.OrderCanceled,
-			"is_active":  false,
 			"updated_at": time.Now(),
 		},
 	}
@@ -65,6 +64,32 @@ func (r *Repository) Cancel(id string) error {
 
 	if res.MatchedCount == 0 {
 		return errors.New("order not found")
+	}
+
+	return nil
+}
+
+func (r *Repository) SoftDeleteByID(ctx context.Context, id string) error {
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return fmt.Errorf("invalid id format: %w", err)
+	}
+
+	filter := bson.M{"_id": objectID}
+	update := bson.M{
+		"$set": bson.M{
+			"is_delete":  true,
+			"updated_at": time.Now(),
+		},
+	}
+
+	res, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	if res.MatchedCount == 0 {
+		return mongo.ErrNoDocuments
 	}
 
 	return nil
@@ -87,19 +112,10 @@ func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status typ
 		return fmt.Errorf("invalid id format: %w", err)
 	}
 
-	var isActive bool
-	switch status {
-	case types.OrderCanceled, types.OrderDelivered:
-		isActive = false
-	default:
-		isActive = true
-	}
-
 	filter := bson.M{"_id": objectID}
 	update := bson.M{
 		"$set": bson.M{
 			"status":     status,
-			"is_active":  isActive,
 			"updated_at": time.Now(),
 		},
 	}

@@ -30,7 +30,8 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g := e.Group("/order")
 	g.POST("", handler.Create) // ← düzelt!
 	g.GET("/:id", handler.GetByID)
-	g.DELETE("/cancel/:id", handler.CancelOrder)
+	g.PATCH("/cancel/:id", handler.CancelOrder)
+	g.PATCH("/delete/:id", handler.DeleteOrder)
 	g.PUT("/:id/ship", handler.ShipOrder)
 	g.PUT("/:id/deliver", handler.DeliverOrder)
 	g.GET("/list", handler.GetAllOrders)
@@ -109,7 +110,27 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully."})
+}
+
+func (h *Handler) DeleteOrder(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+	id := c.Param("id")
+
+	err := h.service.DeleteOrder(c.Request().Context(), id)
+	if err != nil {
+		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
+			return c.JSON(http.StatusNotFound, echo.Map{"message": "Order not found"})
+		}
+		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
+			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
+		}
+
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order deleted (soft delete) successfully."})
 }
 
 func (h *Handler) Create(c echo.Context) error {
