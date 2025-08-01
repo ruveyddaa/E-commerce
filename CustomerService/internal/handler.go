@@ -121,6 +121,7 @@ func (h *Handler) Update(c echo.Context) error {
 	}
 
 	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
+	if err != nil {
 		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
 	}
 
