@@ -27,7 +27,6 @@ func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 		UpdatedAt: customer.UpdatedAt,
 	}
 }
-
 func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Customer {
 	if req == nil {
 		return nil

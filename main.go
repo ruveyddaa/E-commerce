@@ -33,6 +33,10 @@ func main() {
 
 	// === ORDER SERVICE ===
 	orderEcho := echo.New()
+	orderEcho.Use(middleware.CorrelationIdMiddleware())
+	orderEcho.Use(middleware.LoggingMiddleware)
+	orderEcho.Use(middleware.RecoveryMiddleware)
+	orderEcho.Use(middleware.ErrorHandler())
 	orderEcho.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	go func() {
