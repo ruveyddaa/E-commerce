@@ -87,10 +87,19 @@ func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status typ
 		return fmt.Errorf("invalid id format: %w", err)
 	}
 
+	var isActive bool
+	switch status {
+	case types.OrderCanceled, types.OrderDelivered:
+		isActive = false
+	default:
+		isActive = true
+	}
+
 	filter := bson.M{"_id": objectID}
 	update := bson.M{
 		"$set": bson.M{
 			"status":     status,
+			"is_active":  isActive,
 			"updated_at": time.Now(),
 		},
 	}
