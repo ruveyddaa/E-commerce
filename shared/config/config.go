@@ -8,10 +8,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// explain why we have the "shared" folder, why we have a config here and another config in seperate projects in the lecture?
 type DbConfig struct {
 	MongoDuration  time.Duration
 	MongoClientURI string
+}
+
+type ServiceUrls struct {
+	CustomerServiceURL string
 }
 
 var cfgs = map[string]DbConfig{
@@ -26,28 +29,31 @@ var cfgs = map[string]DbConfig{
 	},
 }
 
+var serviceUrls ServiceUrls
+
+func init() {
+	// Ortak env yüklemesi sadece bir kez yapılır
+	if err := godotenv.Load("./media/.env"); err != nil {
+		panic("Environment variable did not load")
+	}
+	fmt.Println("Environment variables loaded")
+
+	// Servis URL'leri burada alınır
+	serviceUrls = ServiceUrls{
+		CustomerServiceURL: os.Getenv("CUSTOMER_SERVICE_URL"),
+	}
+}
+
 func GetDBConfig(env string) *DbConfig {
 	config, isExist := cfgs[env]
 	if !isExist {
 		panic("config does not exist")
 	}
 
-	if env == "dev" {
-		config.MongoClientURI = MongoUrlLoad()
-	} else if env == "qa" {
-		// give the env for testing
-	} else {
-		// give the env for production
-	}
-
+	config.MongoClientURI = os.Getenv("MONGO_URI")
 	return &config
 }
 
-func MongoUrlLoad() string {
-	if err := godotenv.Load("./media/.env"); err != nil {
-		panic("Environment variable did not load")
-	}
-	fmt.Println("Connected environment variable load")
-
-	return os.Getenv("MONGO_URI")
+func GetServiceURLs() ServiceUrls {
+	return serviceUrls
 }

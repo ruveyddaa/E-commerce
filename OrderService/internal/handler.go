@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"tesodev-korpes/OrderService/internal/types"
+	"tesodev-korpes/pkg"
+	"tesodev-korpes/shared/config"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	"tesodev-korpes/OrderService/internal/types"
-	"tesodev-korpes/pkg"
 )
 
 // @title Order Service API
@@ -67,13 +68,30 @@ func (h *Handler) GetByID(c echo.Context) error {
 }
 
 // Customer API'ye HTTP GET atan yardımcı fonksiyon
-func fetchCustomerByID(customerID string) (interface{}, error) {
+type OrderWithCustomerResponse struct {
+	types.OrderResponseModel
+	Customer types.CustomerResponseModel `json:"customer,omitempty"`
+}
+
+func fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
-		return nil, fmt.Errorf("customerID boş")
+		return nil, fmt.Errorf("customerID is empty")
 	}
 
-	url := fmt.Sprintf("http://localhost:8001/customer/%s", customerID)
-	resp, err := http.Get(url)
+	baseURL := config.GetServiceURLs().CustomerServiceURL
+
+	url := fmt.Sprintf("%s/customer/%s", baseURL, customerID)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +101,12 @@ func fetchCustomerByID(customerID string) (interface{}, error) {
 		return nil, fmt.Errorf("customer not found, status: %d", resp.StatusCode)
 	}
 
-	var customer interface{}
+	var customer types.CustomerResponseModel
 	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
 		return nil, err
 	}
 
-	return customer, nil
+	return &customer, nil
 }
 
 func (h *Handler) CancelOrder(c echo.Context) error {
@@ -160,9 +178,7 @@ func (h *Handler) DeliverOrder(c echo.Context) error {
 
 	err := h.service.DeliverOrder(c.Request().Context(), id)
 	if err != nil {
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
-		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
