@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"tesodev-korpes/CustomerService/authentication"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Service struct {
@@ -19,35 +21,52 @@ func NewService(repo *Repository) *Service {
 		repo: repo,
 	}
 }
+func (s *Service) GetByEmail(ctx context.Context, email string) (*types.Customer, error) {
+	customer, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, err // yukarıda 404 olarak dönecek
+		}
+		return nil, fmt.Errorf("failed to get customer by email: %w", err)
+	}
+
+	return customer, nil
+}
 
 func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerResponseModel, error) {
 	customer, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, fmt.Errorf("customer not found for ID: %s", id)
+			return nil, err
 		}
 		return nil, fmt.Errorf("failed to get customer: %w", err)
 	}
 
 	return ToCustomerResponse(customer), nil
 }
-
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
+	hashedPwd, err := authentication.HashPassword([]byte(req.Password))
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+	req.Password = string(hashedPwd) // ✔ Şifre hash'leniyor
+
+	// Customer modeline çevir
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
 
+	// Veritabanına kaydet
 	id, err := s.repo.Create(ctx, customer)
-
 	if err != nil {
 		return "", fmt.Errorf("failed to create customer: %w", err)
-
 	}
 
 	return id, nil
 }
 
 func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustomerRequestModel) (*types.Customer, error) {
+
 	customer, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("customer not found for ID: %s", id)

@@ -27,7 +27,6 @@ func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 		UpdatedAt: customer.UpdatedAt,
 	}
 }
-
 func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Customer {
 	if req == nil {
 		return nil
@@ -72,17 +71,12 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	if req.LastName != "" {
 		customer.LastName = req.LastName
 	}
-	if req.Email != nil {
-		customer.Email = req.Email
-	}
+
 	if req.Phone != nil {
 		customer.Phone = req.Phone
 	}
 	if req.Address != nil {
 		customer.Address = req.Address
-	}
-	if req.Password != nil {
-		customer.Password = req.Password
 	}
 	if !req.IsActive {
 		customer.IsActive = req.IsActive

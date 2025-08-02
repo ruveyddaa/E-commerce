@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"tesodev-korpes/pkg"
 	"time"
@@ -35,9 +34,9 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderResponseM
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, fmt.Errorf("order not found for ID: %s", id)
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to get order: %w", err)
+		return nil, err
 	}
 
 	return ToOrderResponse(order), nil
@@ -55,7 +54,7 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
+			return err
 		}
 		return err
 	}
@@ -66,7 +65,7 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderShipped)
 	if err != nil {
-		return fmt.Errorf("failed to update order status to SHIPPED: %w", err)
+		return err
 	}
 
 	return nil
@@ -76,7 +75,7 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
+			return err
 		}
 		return err
 	}
@@ -87,7 +86,7 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderDelivered)
 	if err != nil {
-		return fmt.Errorf("failed to update order status to DELIVERED: %w", err)
+		return err
 	}
 
 	return nil
@@ -97,7 +96,7 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
+			return err
 		}
 		return err
 	}
@@ -110,7 +109,7 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderCanceled)
 	if err != nil {
-		return fmt.Errorf("failed to cancel order: %w", err)
+		return err
 	}
 
 	return nil

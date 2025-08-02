@@ -2,20 +2,8 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"net/http"
-)
-
-const (
-	CodeUnknown            = "UNKNOWN"
-	CodeInvalidInput       = "INVALID_INPUT"
-	CodeValidation         = "VALIDATION_FAILED"
-	CodeNotFound           = "NOT_FOUND"
-	CodeUnauthorized       = "UNAUTHORIZED"
-	CodeForbidden          = "FORBIDDEN"
-	CodeConflict           = "CONFLICT"
-	CodeInternalError      = "INTERNAL_ERROR"
-	CodeServiceDown        = "SERVICE_UNAVAILABLE"
-	CodeOrderStateConflict = "ORDER_STATE_CONFLICT"
 )
 
 type AppError struct {
@@ -53,15 +41,8 @@ func Wrap(err error, status int, code, message string) *AppError {
 	}
 }
 
-func NotFound() *AppError {
-	return New(http.StatusNotFound, CodeNotFound, "The requested resource was not found.")
-}
-
-func ValidationFailed(message string) *AppError {
-	if message == "" {
-		message = "Input validation failed."
-	}
-	return New(http.StatusUnprocessableEntity, CodeValidation, message)
+func NotFound(message string) *AppError {
+	return New(http.StatusNotFound, CodeNotFound, message)
 }
 
 func BadRequest(message string) *AppError {
@@ -79,8 +60,9 @@ func Forbidden() *AppError {
 	return New(http.StatusForbidden, CodeForbidden, "You do not have permission to access this resource.")
 }
 
-func Internal(err error) *AppError {
-	return Wrap(err, http.StatusInternalServerError, CodeInternalError, "An unexpected error occurred in the system.")
+func Internal(err error, message string) *AppError {
+	log.Error("Internal error:", err) // ← HATA MESAJI BURADA ÇIKAR
+	return Wrap(err, http.StatusInternalServerError, CodeInternalError, message)
 }
 
 func InvalidOrderStateWithStatus(action, currentStatus string) *AppError {
