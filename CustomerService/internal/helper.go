@@ -71,9 +71,7 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	if req.LastName != "" {
 		customer.LastName = req.LastName
 	}
-	if req.Email != nil {
-		customer.Email = req.Email
-	}
+
 	if req.Phone != nil {
 		customer.Phone = req.Phone
 	}

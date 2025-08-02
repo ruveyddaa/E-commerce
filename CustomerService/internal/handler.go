@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+
 	"github.com/labstack/gommon/log"
 	"net/http"
 	"strconv"
@@ -46,12 +47,7 @@ func (h *Handler) Login(c echo.Context) error {
 		log.Error("Bind error: ", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 	}
-
-	email := ""
-	for k := range req.Email {
-		email = k
-		break
-	}
+	email := req.Email
 	log.Info("Extracted email: ", email)
 
 	if email == "" {
@@ -68,7 +64,7 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 	}
 
-	ok, err := authentication.CheckPasswordHash([]byte(user.Password), []byte(req.Password))
+	ok, err := authentication.CheckPasswordHash(req.Password, user.Password)
 
 	if err != nil {
 		log.Error("Password check failed: ", err)
@@ -151,13 +147,14 @@ func (h *Handler) GetByID(c echo.Context) error {
 // @Router /customer/ [post]
 func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateCustomerRequestModel
+
 	if err := c.Bind(&req); err != nil {
 		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400102])
 	}
 
 	createdID, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101]])
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{

@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"net/http"
 )
 
@@ -60,6 +61,7 @@ func Forbidden() *AppError {
 }
 
 func Internal(err error, message string) *AppError {
+	log.Error("Internal error:", err) // ← HATA MESAJI BURADA ÇIKAR
 	return Wrap(err, http.StatusInternalServerError, CodeInternalError, message)
 }
 

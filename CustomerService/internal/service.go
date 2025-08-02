@@ -44,19 +44,19 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 
 	return ToCustomerResponse(customer), nil
 }
-
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
-	// 🔐 Şifreyi hashle
 	hashedPwd, err := authentication.HashPassword([]byte(req.Password))
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
-	req.Password = string(hashedPwd)
+	req.Password = string(hashedPwd) // ✔ Şifre hash'leniyor
 
+	// Customer modeline çevir
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
 
+	// Veritabanına kaydet
 	id, err := s.repo.Create(ctx, customer)
 	if err != nil {
 		return "", fmt.Errorf("failed to create customer: %w", err)
