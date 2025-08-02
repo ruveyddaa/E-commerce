@@ -3,9 +3,8 @@ package types
 type OrderStatus string
 
 const (
-	OrderPending   OrderStatus = "PENDING"
+	OrderOrdered   OrderStatus = "ORDERED"
 	OrderShipped   OrderStatus = "SHIPPED"
 	OrderDelivered OrderStatus = "DELIVERED"
 	OrderCanceled  OrderStatus = "CANCELED"
-	OrderOrdered   OrderStatus = "ORDERED"
 )
