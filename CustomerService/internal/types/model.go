@@ -6,7 +6,7 @@ import (
 
 type Customer struct {
 	Id        string            `bson:"_id,omitempty" json:"id"`
-	Password  []byte            `bson:"password" json:"password"`
+	Password  string            `bson:"password" json:"password"`
 	FirstName string            `bson:"first_name" json:"first_name"`
 	LastName  string            `bson:"last_name" json:"last_name"`
 	Email     map[string]string `bson:"email" json:"email"`

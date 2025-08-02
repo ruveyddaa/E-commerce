@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"tesodev-korpes/CustomerService/authentication"
 	"tesodev-korpes/CustomerService/internal/types"
 	"time"
 
@@ -20,6 +21,17 @@ func NewService(repo *Repository) *Service {
 		repo: repo,
 	}
 }
+func (s *Service) GetByEmail(ctx context.Context, email string) (*types.Customer, error) {
+	customer, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, err // yukarıda 404 olarak dönecek
+		}
+		return nil, fmt.Errorf("failed to get customer by email: %w", err)
+	}
+
+	return customer, nil
+}
 
 func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerResponseModel, error) {
 	customer, err := s.repo.GetByID(ctx, id)
@@ -34,16 +46,20 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 }
 
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
+	// 🔐 Şifreyi hashle
+	hashedPwd, err := authentication.HashPassword([]byte(req.Password))
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+	req.Password = string(hashedPwd)
 
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
 
 	id, err := s.repo.Create(ctx, customer)
-
 	if err != nil {
 		return "", fmt.Errorf("failed to create customer: %w", err)
-
 	}
 
 	return id, nil

@@ -10,7 +10,7 @@ type CreateCustomerRequestModel struct {
 	Email     map[string]string `bson:"email" json:"email" validate:"required,dive,keys,required,email,endkeys,required"`
 	Phone     []Phone           `bson:"phone" json:"phone" validate:"required,dive"`
 	Address   []Address         `bson:"address" json:"address" validate:"required,dive"`
-	Password  []byte            `bson:"password" json:"password" validate:"required"`
+	Password  string            `bson:"password" json:"password" validate:"required"`
 }
 
 type UpdateCustomerRequestModel struct {
@@ -19,7 +19,7 @@ type UpdateCustomerRequestModel struct {
 	Email     map[string]string `bson:"email,omitempty" json:"email,omitempty" validate:"omitempty,dive,keys,required,email,endkeys,required"`
 	Phone     []Phone           `bson:"phone,omitempty" json:"phone,omitempty" validate:"omitempty,dive"`
 	Address   []Address         `bson:"address,omitempty" json:"address,omitempty" validate:"omitempty,dive"`
-	Password  []byte            `bson:"password,omitempty" json:"password,omitempty" validate:"omitempty"`
+	Password  string            `bson:"password,omitempty" json:"password,omitempty" validate:"omitempty"`
 	IsActive  bool              `bson:"is_active,omitempty" json:"is_active,omitempty"`
 }
 
@@ -38,4 +38,8 @@ type CustomerResponseModel struct {
 type Pagination struct {
 	Page  int
 	Limit int
+}
+type LoginRequestModel struct {
+	Email    map[string]string `bson:"email" json:"email" validate:"required,dive,keys,required,email,endkeys,required"`
+	Password string            `bson:"password" json:"password" validate:"required"`
 }
