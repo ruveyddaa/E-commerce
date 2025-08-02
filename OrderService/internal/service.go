@@ -93,14 +93,6 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	return nil
 }
 
-func calculateTotalPrice(items []types.OrderItem) float64 {
-	var total float64
-	for _, item := range items {
-		total += float64(item.Quantity) * item.UnitPrice
-	}
-	return total
-}
-
 func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -147,4 +139,12 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 
 	return response, nil
 
+}
+
+func calculateTotalPrice(items []types.OrderItem) float64 {
+	var total float64
+	for _, item := range items {
+		total += float64(item.Quantity) * item.UnitPrice
+	}
+	return total
 }

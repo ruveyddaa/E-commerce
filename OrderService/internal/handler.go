@@ -32,10 +32,9 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.POST("", handler.Create) // ← düzelt!
 	g.GET("/:id", handler.GetByID)
 	g.DELETE("/cancel/:id", handler.CancelOrder)
-	g.PUT("/:id/ship", handler.ShipOrder)
-	g.PUT("/:id/deliver", handler.DeliverOrder)
+	g.PATCH("/:id/ship", handler.ShipOrder)
+	g.PATCH("/:id/deliver", handler.DeliverOrder)
 	g.GET("/list", handler.GetAllOrders)
-	//g.PATCH("/cancel/:id", handler.CancelOrder)
 
 }
 
@@ -65,12 +64,6 @@ func (h *Handler) GetByID(c echo.Context) error {
 
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
 	return c.JSON(http.StatusOK, response)
-}
-
-// . Customer API'ye HTTP GET atan yardımcı fonksiyon
-type OrderWithCustomerResponse struct {
-	types.OrderResponseModel
-	Customer types.CustomerResponseModel `json:"customer,omitempty"`
 }
 
 func fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
