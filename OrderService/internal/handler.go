@@ -67,7 +67,7 @@ func (h *Handler) GetByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// Customer API'ye HTTP GET atan yardımcı fonksiyon
+// . Customer API'ye HTTP GET atan yardımcı fonksiyon
 type OrderWithCustomerResponse struct {
 	types.OrderResponseModel
 	Customer types.CustomerResponseModel `json:"customer,omitempty"`
