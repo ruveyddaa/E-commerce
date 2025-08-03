@@ -82,11 +82,6 @@ func (r *Repository) Create(ctx context.Context, order *types.Order) (string, er
 }
 
 func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status types.OrderStatus) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid id format: %w", err)
-	}
-
 	var isActive bool
 	switch status {
 	case types.OrderCanceled, types.OrderDelivered:
@@ -95,7 +90,7 @@ func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status typ
 		isActive = true
 	}
 
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": id}
 	update := bson.M{
 		"$set": bson.M{
 			"status":     status,
