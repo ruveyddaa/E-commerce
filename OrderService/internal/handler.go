@@ -128,21 +128,25 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	var req types.Order
+	var req types.CreateOrderRequestModel
 
 	if err := c.Bind(&req); err != nil {
 		return pkg.BadRequest("Geçersiz istek verisi: " + err.Error())
 	}
 
-	createdID, err := h.service.Create(c.Request().Context(), &req)
+	order := FromCreateOrderRequest(&req)
+
+	createdID, err := h.service.Create(c.Request().Context(), order)
 	if err != nil {
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
+		return pkg.Internal(err, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message":   "Order başarıyla oluşturuldu",
-		"createdId": createdID,
-	})
+	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
+	if err != nil {
+		return pkg.Internal(err, "Oluşturulan sipariş alınamadı")
+	}
+
+	return c.JSON(http.StatusCreated, createdOrder)
 }
 
 func (h *Handler) ShipOrder(c echo.Context) error {

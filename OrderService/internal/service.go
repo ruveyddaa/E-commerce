@@ -2,7 +2,10 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"tesodev-korpes/pkg"
 	"time"
@@ -40,6 +43,66 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderResponseM
 	}
 
 	return ToOrderResponse(order), nil
+}
+
+func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
+	if order.CustomerId == "" {
+		return "", errors.New("customerId boş olamaz")
+	}
+
+	customer, err := s.fetchCustomerByID(order.CustomerId)
+	if err != nil {
+		return "", fmt.Errorf("customer kontrolü başarısız: %w", err)
+	}
+	if customer == nil {
+		return "", errors.New("customer bulunamadı")
+	}
+
+	order.Id = uuid.NewString()
+	order.CreatedAt = time.Now()
+	order.UpdatedAt = time.Now()
+	order.Status = types.OrderOrdered
+	order.IsActive = true
+
+	order.TotalPrice = calculateTotalPrice(order.Items)
+
+	id, err := s.repo.Create(ctx, order)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
+	if customerID == "" {
+		return nil, errors.New("customerID boş")
+	}
+
+	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+
+	var customer types.CustomerResponseModel
+	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
+		return nil, err
+	}
+
+	return &customer, nil
 }
 
 func (s *Service) ShipOrder(ctx context.Context, id string) error {
