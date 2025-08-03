@@ -29,7 +29,7 @@ type Handler struct {
 func NewHandler(e *echo.Echo, service *Service) {
 	handler := &Handler{service: service}
 	g := e.Group("/order")
-	g.POST("", handler.Create) // ← düzelt!
+	//g.POST("", handler.Create) // ← düzelt!
 	g.GET("/:id", handler.GetByID)
 	g.DELETE("/cancel/:id", handler.CancelOrder)
 	g.PUT("/:id/ship", handler.ShipOrder)
@@ -65,12 +65,6 @@ func (h *Handler) GetByID(c echo.Context) error {
 
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
 	return c.JSON(http.StatusOK, response)
-}
-
-// Customer API'ye HTTP GET atan yardımcı fonksiyon
-type OrderWithCustomerResponse struct {
-	types.OrderResponseModel
-	Customer types.CustomerResponseModel `json:"customer,omitempty"`
 }
 
 // buranın errorlarını düzeltelim
@@ -132,24 +126,6 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
-}
-
-func (h *Handler) Create(c echo.Context) error {
-	var req types.Order
-
-	if err := c.Bind(&req); err != nil {
-		return pkg.BadRequest("Geçersiz istek verisi: " + err.Error())
-	}
-
-	createdID, err := h.service.Create(c.Request().Context(), &req)
-	if err != nil {
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
-	}
-
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message":   "Order başarıyla oluşturuldu",
-		"createdId": createdID,
-	})
 }
 
 func (h *Handler) ShipOrder(c echo.Context) error {
