@@ -3,10 +3,10 @@ package internal
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"tesodev-korpes/OrderService/internal/types"
 	"time"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,41 +18,6 @@ type Repository struct {
 
 func NewRepository(collection *mongo.Collection) *Repository {
 	return &Repository{collection: collection}
-}
-
-func (r *Repository) GetByID(ctx context.Context, id string) (*types.Order, error) {
-	var order types.Order
-	filter := bson.M{"_id": id} // UUID string olarak direkt kullanılıyor
-	err := r.collection.FindOne(ctx, filter).Decode(&order)
-	if err != nil {
-		return nil, err
-	}
-	return &order, nil
-}
-
-func (r *Repository) Cancel(id string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	update := bson.M{
-		"$set": bson.M{
-			"status":     types.OrderCanceled,
-			"is_active":  false,
-			"updated_at": time.Now(),
-		},
-	}
-
-	filter := bson.M{"_id": id}
-	res, err := r.collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	if res.MatchedCount == 0 {
-		return errors.New("order not found")
-	}
-
-	return nil
 }
 
 func (r *Repository) Create(ctx context.Context, order *types.Order) (string, error) {
@@ -68,6 +33,16 @@ func (r *Repository) Create(ctx context.Context, order *types.Order) (string, er
 		return "", err
 	}
 	return order.Id, nil
+}
+
+func (r *Repository) GetByID(ctx context.Context, id string) (*types.Order, error) {
+	var order types.Order
+	filter := bson.M{"_id": id}
+	err := r.collection.FindOne(ctx, filter).Decode(&order)
+	if err != nil {
+		return nil, err
+	}
+	return &order, nil
 }
 
 func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status types.OrderStatus) error {
@@ -95,6 +70,31 @@ func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status typ
 
 	if res.MatchedCount == 0 {
 		return mongo.ErrNoDocuments
+	}
+
+	return nil
+}
+
+func (r *Repository) Cancel(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	update := bson.M{
+		"$set": bson.M{
+			"status":     types.OrderCanceled,
+			"is_active":  false,
+			"updated_at": time.Now(),
+		},
+	}
+
+	filter := bson.M{"_id": id}
+	res, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	if res.MatchedCount == 0 {
+		return errors.New("order not found")
 	}
 
 	return nil

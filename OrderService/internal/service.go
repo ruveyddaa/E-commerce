@@ -6,11 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"tesodev-korpes/pkg"
 	"time"
-
-	"github.com/google/uuid"
 
 	"tesodev-korpes/OrderService/internal/types"
 
@@ -31,26 +30,6 @@ func NewService(repo *Repository, customerServiceURL string) *Service {
 		httpClient:         &http.Client{Timeout: 5 * time.Second},
 		customerServiceURL: customerServiceURL,
 	}
-}
-
-func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCustomerResponse, error) {
-	order, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, err
-		}
-		return nil, err
-	}
-
-	customer, err := s.fetchCustomerByID(order.CustomerId)
-	if err != nil {
-		return nil, fmt.Errorf("customer fetch failed: %w", err)
-	}
-
-	return &types.OrderWithCustomerResponse{
-		OrderResponseModel: *ToOrderResponse(order),
-		Customer:           *customer,
-	}, nil
 }
 
 func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
@@ -78,35 +57,24 @@ func (s *Service) Create(ctx context.Context, order *types.Order) (string, error
 	return id, nil
 }
 
-func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
-	if customerID == "" {
-		return nil, errors.New("customerID bos")
-	}
-
-	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCustomerResponse, error) {
+	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, err
+		}
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := s.httpClient.Do(req)
+	customer, err := s.fetchCustomerByID(order.CustomerId)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, nil
+		return nil, fmt.Errorf("customer fetch failed: %w", err)
 	}
 
-	var customer types.CustomerResponseModel
-	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
-		return nil, err
-	}
-
-	return &customer, nil
+	return &types.OrderWithCustomerResponse{
+		OrderResponseModel: *ToOrderResponse(order),
+		Customer:           *customer,
+	}, nil
 }
 
 func (s *Service) ShipOrder(ctx context.Context, id string) error {
@@ -198,6 +166,38 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 	return response, nil
 
 }
+
+func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
+	if customerID == "" {
+		return nil, errors.New("customerID bos")
+	}
+
+	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil
+	}
+
+	var customer types.CustomerResponseModel
+	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
+		return nil, err
+	}
+
+	return &customer, nil
+}
+
 func calculateTotalPrice(items []types.OrderItem) float64 {
 	var total float64
 	for _, item := range items {

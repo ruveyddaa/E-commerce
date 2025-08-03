@@ -26,58 +26,13 @@ type Handler struct {
 func NewHandler(e *echo.Echo, service *Service) {
 	handler := &Handler{service: service}
 	g := e.Group("/order")
-	g.POST("", handler.Create) // ← düzelt!
+	g.POST("", handler.Create)
 	g.GET("/:id", handler.GetByID)
-	g.DELETE("/cancel/:id", handler.CancelOrder)
 	g.PATCH("/:id/ship", handler.ShipOrder)
 	g.PATCH("/:id/deliver", handler.DeliverOrder)
+	g.DELETE("/cancel/:id", handler.CancelOrder)
 	g.GET("/list", handler.GetAllOrders)
 
-}
-
-func (h *Handler) GetByID(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string)
-	id := c.Param("id")
-
-	if !pkg.IsValidUUID(id) {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
-	}
-
-	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
-		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
-	}
-
-	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
-	return c.JSON(http.StatusOK, orderWithCustomer)
-}
-
-func (h *Handler) CancelOrder(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string)
-	id := c.Param("id")
-	if isValid := pkg.IsValidUUID(id); !isValid {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
-	}
-
-	err := h.service.CancelOrder(c.Request().Context(), id)
-	if err != nil {
-		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
-			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
-		}
-
-		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
-			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
-		} // buranın errorlarınını düzeltelim
-
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
-	}
-
-	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
 }
 
 func (h *Handler) Create(c echo.Context) error {
@@ -100,6 +55,27 @@ func (h *Handler) Create(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, createdOrder)
+}
+
+func (h *Handler) GetByID(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+	id := c.Param("id")
+
+	if !pkg.IsValidUUID(id) {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
+	}
+
+	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
+		}
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
+	}
+
+	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
+	return c.JSON(http.StatusOK, orderWithCustomer)
 }
 
 func (h *Handler) ShipOrder(c echo.Context) error {
@@ -170,4 +146,28 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})
 
+}
+
+func (h *Handler) CancelOrder(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+	id := c.Param("id")
+	if isValid := pkg.IsValidUUID(id); !isValid {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
+	}
+
+	err := h.service.CancelOrder(c.Request().Context(), id)
+	if err != nil {
+		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
+		}
+
+		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
+			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
+		} // buranın errorlarınını düzeltelim
+
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
 }
