@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 	"tesodev-korpes/pkg"
 	"time"
 
@@ -26,7 +24,12 @@ func ErrorHandler() echo.MiddlewareFunc {
 			if err == nil {
 				return nil
 			}
-			
+
+			var validationErr *pkg.AppValidationError
+			if errors.As(err, &validationErr) {
+				return c.JSON(validationErr.HTTPStatus, validationErr)
+			}
+
 			appErr := toAppError(err)
 
 			if c.Response().Committed {
@@ -45,18 +48,17 @@ func toAppError(err error) *pkg.AppError {
 		return appErr
 	}
 
-	var httpErr *echo.HTTPError
-	if errors.As(err, &httpErr) {
-		switch httpErr.Code {
-		case http.StatusBadRequest:
-			return pkg.BadRequest(fmt.Sprintf("%v", httpErr.Message))
-		case http.StatusInternalServerError:
-			return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceServiceCode500301])
-		default:
-			return pkg.Wrap(httpErr, httpErr.Code, pkg.CodeInternalFrameworkError, pkg.InternalServerErrorMessages[pkg.ResourceFrameworkCode500401])
-		}
-	}
-
+	//var httpErr *echo.HTTPError
+	// if errors.As(err, &httpErr) {
+	// 	switch httpErr.Code {
+	// 	case http.StatusBadRequest:
+	// 		return pkg.BadRequest(fmt.Sprintf("%v", httpErr.Message))
+	// 	case http.StatusInternalServerError:
+	// 		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceServiceCode500301])
+	// 	default:
+	// 		return pkg.Wrap(httpErr, httpErr.Code, pkg.CodeInternalFrameworkError, pkg.InternalServerErrorMessages[pkg.ResourceFrameworkCode500401])
+	// 	}
+	// }
 	return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceServiceCode500301])
 }
 

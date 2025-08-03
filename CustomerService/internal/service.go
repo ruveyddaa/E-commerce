@@ -49,14 +49,12 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
-	req.Password = string(hashedPwd) // ✔ Şifre hash'leniyor
+	req.Password = string(hashedPwd)
 
-	// Customer modeline çevir
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
 
-	// Veritabanına kaydet
 	id, err := s.repo.Create(ctx, customer)
 	if err != nil {
 		return "", fmt.Errorf("failed to create customer: %w", err)
@@ -83,13 +81,12 @@ func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustom
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
-	// 1. Müşteri var mı kontrol et
+
 	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("customer not found with id %s", id)
 	}
 
-	// 2. Silme işlemi
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete customer with id %s", id)
 	}

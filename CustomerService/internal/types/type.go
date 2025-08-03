@@ -7,7 +7,7 @@ import (
 type CreateCustomerRequestModel struct {
 	FirstName string    `bson:"first_name" json:"FirstName" validate:"required,min=2,max=50"`
 	LastName  string    `bson:"last_name" json:"last_name" validate:"required,min=2,max=50"`
-	Email     string    `bson:"email" json:"email" validate:"required,dive,keys,required,email,endkeys,required"`
+	Email     string    `bson:"email" json:"email" validate:"required,email"` // <-- DÜZELTİLDİ
 	Phone     []Phone   `bson:"phone" json:"phone" validate:"required,dive"`
 	Address   []Address `bson:"address" json:"address" validate:"required,dive"`
 	Password  string    `bson:"password" json:"password" validate:"required"`
@@ -16,7 +16,7 @@ type CreateCustomerRequestModel struct {
 type UpdateCustomerRequestModel struct {
 	FirstName string    `bson:"first_name,omitempty" json:"first_name,omitempty" validate:"omitempty,min=2,max=50"`
 	LastName  string    `bson:"last_name,omitempty" json:"last_name,omitempty" validate:"omitempty,min=2,max=50"`
-	Email     string    `bson:"email,omitempty" json:"email,omitempty" validate:"omitempty,dive,keys,required,email,endkeys,required"`
+	Email     string    `bson:"email" json:"email" validate:"required,email"` // <-- DÜZELTİLDİ
 	Phone     []Phone   `bson:"phone,omitempty" json:"phone,omitempty" validate:"omitempty,dive"`
 	Address   []Address `bson:"address,omitempty" json:"address,omitempty" validate:"omitempty,dive"`
 	Password  string    `bson:"password,omitempty" json:"password,omitempty" validate:"omitempty"`
@@ -40,6 +40,6 @@ type Pagination struct {
 	Limit int
 }
 type LoginRequestModel struct {
-	Email    string `bson:"email" json:"email" validate:"required,email"`
+	Email    string `bson:"email" json:"email" validate:"required,email"` // <-- DÜZELTİLDİ
 	Password string `bson:"password" json:"password" validate:"required"`
 }
