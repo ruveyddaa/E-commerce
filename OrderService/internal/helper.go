@@ -29,7 +29,7 @@ func FromCreateOrderRequest(req *types.CreateOrderRequestModel) *types.Order {
 		ShippingAddress: req.ShippingAddress,
 		BillingAddress:  req.BillingAddress,
 		TotalPrice:      calculateTotalPrice(items),
-		Status:          types.OrderPending,
+		Status:          types.OrderOrdered,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 		//IsActive:        true,
@@ -55,13 +55,13 @@ func ToOrderResponse(order *types.Order) *types.OrderResponseModel {
 	}
 }
 
-func ToOrderWithCustomerResponse(order *types.OrderResponseModel, customer interface{}) *types.OrderWithCustomerResponse {
-	if order == nil {
+func ToOrderWithCustomerResponse(order *types.OrderResponseModel, customer *types.CustomerResponseModel) *types.OrderWithCustomerResponse {
+	if order == nil || customer == nil {
 		return nil
 	}
 
 	return &types.OrderWithCustomerResponse{
 		OrderResponseModel: *order,
-		Customer:           customer,
+		Customer:           *customer,
 	}
 }

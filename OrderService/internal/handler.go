@@ -1,15 +1,12 @@
 package internal
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg"
-	"tesodev-korpes/shared/config"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,24 +26,46 @@ type Handler struct {
 func NewHandler(e *echo.Echo, service *Service) {
 	handler := &Handler{service: service}
 	g := e.Group("/order")
-	//g.POST("", handler.Create) // ← düzelt!
+	g.POST("", handler.Create)
 	g.GET("/:id", handler.GetByID)
+	g.PATCH("/:id/ship", handler.ShipOrder)
+	g.PATCH("/:id/deliver", handler.DeliverOrder)
 	g.DELETE("/cancel/:id", handler.CancelOrder)
-	g.PUT("/:id/ship", handler.ShipOrder)
-	g.PUT("/:id/deliver", handler.DeliverOrder)
 	g.GET("/list", handler.GetAllOrders)
-	//g.PATCH("/cancel/:id", handler.CancelOrder)
 
+}
+
+func (h *Handler) Create(c echo.Context) error {
+	var req types.CreateOrderRequestModel
+
+	if err := c.Bind(&req); err != nil {
+		return pkg.BadRequest("Geçersiz istek verisi: " + err.Error())
+	}
+
+	order := FromCreateOrderRequest(&req)
+
+	createdID, err := h.service.Create(c.Request().Context(), order)
+	if err != nil {
+		return pkg.Internal(err, err.Error())
+	}
+
+	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
+	if err != nil {
+		return pkg.Internal(err, "Oluşturulan sipariş alınamadı")
+	}
+
+	return c.JSON(http.StatusCreated, createdOrder)
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
-	if isValid := pkg.IsValidUUID(id); !isValid {
+
+	if !pkg.IsValidUUID(id) {
 		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
 	}
 
-	order, err := h.service.GetByID(c.Request().Context(), id)
+	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
@@ -55,77 +74,8 @@ func (h *Handler) GetByID(c echo.Context) error {
 		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
 	}
 
-	customer, err := fetchCustomerByID(order.CustomerId)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
-	}
-
-	response := ToOrderWithCustomerResponse(order, customer)
-
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
-	return c.JSON(http.StatusOK, response)
-}
-
-// buranın errorlarını düzeltelim
-func fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
-	if customerID == "" {
-		return nil, fmt.Errorf("customerID is empty")
-	}
-
-	baseURL := config.GetServiceURLs().CustomerServiceURL
-
-	url := fmt.Sprintf("%s/customer/%s", baseURL, customerID)
-
-	client := &http.Client{Timeout: 5 * time.Second}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("customer not found, status: %d", resp.StatusCode)
-	}
-
-	var customer types.CustomerResponseModel
-	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
-		return nil, err
-	}
-
-	return &customer, nil
-}
-
-func (h *Handler) CancelOrder(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string)
-	id := c.Param("id")
-	if isValid := pkg.IsValidUUID(id); !isValid {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
-	}
-
-	err := h.service.CancelOrder(c.Request().Context(), id)
-	if err != nil {
-		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
-			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
-		}
-
-		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
-			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
-		} // buranın errorlarınını düzeltelim
-
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
-	}
-
-	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
+	return c.JSON(http.StatusOK, orderWithCustomer)
 }
 
 func (h *Handler) ShipOrder(c echo.Context) error {
@@ -165,6 +115,30 @@ func (h *Handler) DeliverOrder(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
+}
+
+func (h *Handler) CancelOrder(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+	id := c.Param("id")
+	if isValid := pkg.IsValidUUID(id); !isValid {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
+	}
+
+	err := h.service.CancelOrder(c.Request().Context(), id)
+	if err != nil {
+		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
+		}
+
+		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
+			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
+		} // buranın errorlarınını düzeltelim
+
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
 }
 
 func (h *Handler) GetAllOrders(c echo.Context) error {
