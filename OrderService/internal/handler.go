@@ -29,10 +29,9 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.POST("", handler.Create) // ← düzelt!
 	g.GET("/:id", handler.GetByID)
 	g.DELETE("/cancel/:id", handler.CancelOrder)
-	g.PUT("/:id/ship", handler.ShipOrder)
-	g.PUT("/:id/deliver", handler.DeliverOrder)
+	g.PATCH("/:id/ship", handler.ShipOrder)
+	g.PATCH("/:id/deliver", handler.DeliverOrder)
 	g.GET("/list", handler.GetAllOrders)
-	//g.PATCH("/cancel/:id", handler.CancelOrder)
 
 }
 
@@ -40,66 +39,67 @@ func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
 
-	order, err := h.service.GetByID(c.Request().Context(), id)
+	if !pkg.IsValidUUID(id) {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
+	}
+
+	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound()
-		}
-		if err.Error() == "the provided hex string is not a valid ObjectID" {
-			return pkg.BadRequest(err.Error())
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
 	}
 
-	customer, err := h.service.FetchCustomerByID(order.CustomerId)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(errors.New("failed to fetch customer info"))
-	}
-
-	response := ToOrderWithCustomerResponse(order, customer)
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, orderWithCustomer)
 }
 
 func (h *Handler) CancelOrder(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
+	if isValid := pkg.IsValidUUID(id); !isValid {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
+	}
 
 	err := h.service.CancelOrder(c.Request().Context(), id)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
-			return c.JSON(http.StatusNotFound, echo.Map{"message": "Order not found"})
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
 		}
 
 		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
 			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
-		}
+		} // buranın errorlarınını düzeltelim
 
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	var req types.Order
+	var req types.CreateOrderRequestModel
 
 	if err := c.Bind(&req); err != nil {
 		return pkg.BadRequest("Geçersiz istek verisi: " + err.Error())
 	}
 
-	createdID, err := h.service.Create(c.Request().Context(), &req)
+	order := FromCreateOrderRequest(&req)
+
+	createdID, err := h.service.Create(c.Request().Context(), order)
 	if err != nil {
-		return pkg.Internal(err)
+		return pkg.Internal(err, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message":   "Order başarıyla oluşturuldu",
-		"createdId": createdID,
-	})
+	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
+	if err != nil {
+		return pkg.Internal(err, "Oluşturulan sipariş alınamadı")
+	}
+
+	return c.JSON(http.StatusCreated, createdOrder)
 }
 
 func (h *Handler) ShipOrder(c echo.Context) error {
@@ -107,7 +107,7 @@ func (h *Handler) ShipOrder(c echo.Context) error {
 
 	err := h.service.ShipOrder(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order shipped successfully"})
@@ -129,10 +129,13 @@ func (h *Handler) ShipOrder(c echo.Context) error {
 // @Router /order/{id}/deliver [put]
 func (h *Handler) DeliverOrder(c echo.Context) error {
 	id := c.Param("id")
+	if !pkg.IsValidUUID(id) {
+		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceOrderCode404201])
+	}
 
 	err := h.service.DeliverOrder(c.Request().Context(), id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal server error"})
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
@@ -159,10 +162,10 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 	orders, err := h.service.GetAllOrders(c.Request().Context(), params)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound()
+			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceOrderCode404201])
 		}
 
-		return pkg.Internal(err)
+		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceOrderCode500201])
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})

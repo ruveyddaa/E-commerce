@@ -1,3 +1,4 @@
+// File: service.go
 package internal
 
 import (
@@ -9,13 +10,13 @@ import (
 	"tesodev-korpes/pkg"
 	"time"
 
+	"github.com/google/uuid"
+
+	"tesodev-korpes/OrderService/internal/types"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	// "go.mongodb.org/mongo-driver/mongo/options"
-	"tesodev-korpes/OrderService/internal/types"
-	// "time"
 )
 
 type Service struct {
@@ -32,25 +33,58 @@ func NewService(repo *Repository, customerServiceURL string) *Service {
 	}
 }
 
-func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderResponseModel, error) {
+func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, fmt.Errorf("order not found for ID: %s", id)
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to get order: %w", err)
+		return nil, err
 	}
 
-	return ToOrderResponse(order), nil
+	customer, err := s.fetchCustomerByID(order.CustomerId)
+	if err != nil {
+		return nil, fmt.Errorf("customer fetch failed: %w", err)
+	}
+
+	return &types.OrderWithCustomerResponse{
+		OrderResponseModel: *ToOrderResponse(order),
+		Customer:           *customer,
+	}, nil
 }
 
-// Customer servisine GET atan helper method service'e taşındı
-func (s *Service) FetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
+func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
+	if order.CustomerId == "" {
+		return "", errors.New("customerId bos olamaz")
+	}
+
+	customer, err := s.fetchCustomerByID(order.CustomerId)
+	if err != nil || customer == nil {
+		return "", fmt.Errorf("customer kontrolu basarisiz")
+	}
+
+	order.Id = uuid.NewString()
+	order.CreatedAt = time.Now()
+	order.UpdatedAt = time.Now()
+	order.Status = types.OrderOrdered
+	order.IsActive = true
+	order.TotalPrice = calculateTotalPrice(order.Items)
+
+	id, err := s.repo.Create(ctx, order)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
-		return nil, fmt.Errorf("customerID is empty")
+		return nil, errors.New("customerID bos")
 	}
 
 	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
+
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -64,7 +98,7 @@ func (s *Service) FetchCustomerByID(customerID string) (*types.CustomerResponseM
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("customer not found, status: %d", resp.StatusCode)
+		return nil, nil
 	}
 
 	var customer types.CustomerResponseModel
@@ -75,19 +109,11 @@ func (s *Service) FetchCustomerByID(customerID string) (*types.CustomerResponseM
 	return &customer, nil
 }
 
-func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = time.Now()
-	//order.IsActive = true
-
-	return s.repo.Create(ctx, order)
-}
-
 func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
+			return err
 		}
 		return err
 	}
@@ -98,7 +124,7 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderShipped)
 	if err != nil {
-		return fmt.Errorf("failed to update order status to SHIPPED: %w", err)
+		return err
 	}
 
 	return nil
@@ -108,7 +134,7 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
+			return err
 		}
 		return err
 	}
@@ -119,25 +145,17 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderDelivered)
 	if err != nil {
-		return fmt.Errorf("failed to update order status to DELIVERED: %w", err)
+		return err
 	}
 
 	return nil
-}
-
-func calculateTotalPrice(items []types.OrderItem) float64 {
-	var total float64
-	for _, item := range items {
-		total += float64(item.Quantity) * item.UnitPrice
-	}
-	return total
 }
 
 func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
+			return err
 		}
 		return err
 	}
@@ -150,7 +168,7 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderCanceled)
 	if err != nil {
-		return fmt.Errorf("failed to cancel order: %w", err)
+		return err
 	}
 
 	return nil
@@ -179,4 +197,11 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 
 	return response, nil
 
+}
+func calculateTotalPrice(items []types.OrderItem) float64 {
+	var total float64
+	for _, item := range items {
+		total += float64(item.Quantity) * item.UnitPrice
+	}
+	return total
 }

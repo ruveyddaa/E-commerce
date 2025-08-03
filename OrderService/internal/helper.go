@@ -29,7 +29,7 @@ func FromCreateOrderRequest(req *types.CreateOrderRequestModel) *types.Order {
 		ShippingAddress: req.ShippingAddress,
 		BillingAddress:  req.BillingAddress,
 		TotalPrice:      calculateTotalPrice(items),
-		Status:          types.OrderPending,
+		Status:          types.OrderOrdered,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 		//IsActive:        true,
