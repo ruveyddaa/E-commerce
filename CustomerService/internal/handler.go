@@ -2,7 +2,7 @@ package internal
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
+	_ "github.com/dgrijalva/jwt-go"
 
 	"github.com/labstack/gommon/log"
 	"net/http"
@@ -39,7 +39,7 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.GET("/list", handler.GetListCustomer)
 
 	e.POST("/login", handler.Login)
-	e.GET("/verify", handler.Verify)
+	//e.GET("/verify", handler.Verify)
 }
 func (h *Handler) Login(c echo.Context) error {
 	var req types.LoginRequestModel
@@ -75,36 +75,39 @@ func (h *Handler) Login(c echo.Context) error {
 		log.Warn("Password mismatch")
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 	}
-	user.Token = authentication.CreateJWT(user.Id, user.FirstName, user.LastName, "secret")
+	//user.Token = authentication.CreateJWT(user.Id, user.FirstName, user.LastName, "secret")
 	resp := c.JSON(http.StatusOK, user)
 	log.Info("Status Ok")
 	return resp
 }
-func (h *Handler) Verify(c echo.Context) error {
-	authHeader := c.Request().Header.Get("Authentication")
-	token, err := jwt.ParseWithClaims(authHeader, &authentication.Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return authentication.SecretKey, nil
-	})
-	if err != nil || !token.Valid {
-		c.Logger().Error("Token verification failed: ", err)
-		return echo.ErrUnauthorized
-	}
-	claims := token.Claims.(*authentication.Claims)
-	userID := claims.Id
 
-	exists, err := h.service.GetByID(c.Request().Context(), userID)
-	if err != nil {
-		c.Logger().Error("Error checking user existence: ", err)
-		return echo.ErrInternalServerError
-	}
+/*
+	func (h *Handler) Verify(c echo.Context) error {
+		authHeader := c.Request().Header.Get("Authentication")
+		token, err := jwt.ParseWithClaims(authHeader, &authentication.Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return authentication.SecretKey, nil
+		})
+		if err != nil || !token.Valid {
+			c.Logger().Error("Token verification failed: ", err)
+			return echo.ErrUnauthorized
+		}
+		claims := token.Claims.(*authentication.Claims)
+		userID := claims.Id
 
-	if exists != nil {
-		c.Logger().Error("User does not exist")
-		return echo.ErrUnauthorized
-	}
+		exists, err := h.service.GetByID(c.Request().Context(), userID)
+		if err != nil {
+			c.Logger().Error("Error checking user existence: ", err)
+			return echo.ErrInternalServerError
+		}
 
-	return c.String(http.StatusOK, "Token verified and user exists")
-}
+		if exists != nil {
+			c.Logger().Error("User does not exist")
+			return echo.ErrUnauthorized
+		}
+
+		return c.String(http.StatusOK, "Token verified and user exists")
+	}
+*/
 func (h *Handler) GetByEmail(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	email := c.Param("email")

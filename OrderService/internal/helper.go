@@ -32,7 +32,6 @@ func FromCreateOrderRequest(req *types.CreateOrderRequestModel) *types.Order {
 		Status:          types.OrderOrdered,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
-		//IsActive:        true,
 	}
 }
 
@@ -51,7 +50,6 @@ func ToOrderResponse(order *types.Order) *types.OrderResponseModel {
 		Status:          order.Status,
 		CreatedAt:       order.CreatedAt,
 		UpdatedAt:       order.UpdatedAt,
-		//IsActive:        order.IsActive,
 	}
 }
 

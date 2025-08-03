@@ -26,7 +26,6 @@ func (r *Repository) Create(ctx context.Context, order *types.Order) (string, er
 	}
 	order.CreatedAt = time.Now()
 	order.UpdatedAt = time.Now()
-	order.IsActive = true
 
 	_, err := r.collection.InsertOne(ctx, order)
 	if err != nil {
@@ -46,19 +45,10 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*types.Order, erro
 }
 
 func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status types.OrderStatus) error {
-	var isActive bool
-	switch status {
-	case types.OrderCanceled, types.OrderDelivered:
-		isActive = false
-	default:
-		isActive = true
-	}
-
 	filter := bson.M{"_id": id}
 	update := bson.M{
 		"$set": bson.M{
 			"status":     status,
-			"is_active":  isActive,
 			"updated_at": time.Now(),
 		},
 	}
@@ -82,7 +72,6 @@ func (r *Repository) Cancel(id string) error {
 	update := bson.M{
 		"$set": bson.M{
 			"status":     types.OrderCanceled,
-			"is_active":  false,
 			"updated_at": time.Now(),
 		},
 	}

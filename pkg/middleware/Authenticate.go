@@ -1,5 +1,6 @@
 package middleware
 
+/*
 import (
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -45,3 +46,4 @@ func Authenticate(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(c)
 	}
 }
+*/
