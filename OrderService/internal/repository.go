@@ -22,21 +22,16 @@ func NewRepository(collection *mongo.Collection) *Repository {
 }
 
 func (r *Repository) GetByID(ctx context.Context, id string) (*types.Order, error) {
-	// 1. String ID'yi MongoDB ObjectID'ye dönüştür
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, fmt.Errorf("geçersiz id formatı: %w", err)
 	}
-
-	// 2. Filter ile eşleşen dökümanı bul ve decode et
 	var order types.Order
 	filter := bson.M{"_id": objectID}
 	err = r.collection.FindOne(ctx, filter).Decode(&order)
 	if err != nil {
 		return nil, err
 	}
-
-	// 3. Order bulunduysa geri döndür
 	return &order, nil
 }
 

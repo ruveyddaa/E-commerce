@@ -54,14 +54,13 @@ func ToOrderResponse(order *types.Order) *types.OrderResponseModel {
 		//IsActive:        order.IsActive,
 	}
 }
-
-func ToOrderWithCustomerResponse(order *types.OrderResponseModel, customer interface{}) *types.OrderWithCustomerResponse {
-	if order == nil {
+func ToOrderWithCustomerResponse(order *types.OrderResponseModel, customer *types.CustomerResponseModel) *types.OrderWithCustomerResponse {
+	if order == nil || customer == nil {
 		return nil
 	}
 
 	return &types.OrderWithCustomerResponse{
 		OrderResponseModel: *order,
-		Customer:           customer,
+		Customer:           *customer,
 	}
 }

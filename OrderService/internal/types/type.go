@@ -29,5 +29,5 @@ type Pagination struct {
 
 type OrderWithCustomerResponse struct {
 	OrderResponseModel
-	Customer interface{} `json:"customer,omitempty"`
+	Customer CustomerResponseModel `json:"customer,omitempty"`
 }

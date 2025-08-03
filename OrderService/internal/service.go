@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -41,6 +42,37 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderResponseM
 	}
 
 	return ToOrderResponse(order), nil
+}
+
+// Customer servisine GET atan helper method service'e taşındı
+func (s *Service) FetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
+	if customerID == "" {
+		return nil, fmt.Errorf("customerID is empty")
+	}
+
+	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("customer not found, status: %d", resp.StatusCode)
+	}
+
+	var customer types.CustomerResponseModel
+	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
+		return nil, err
+	}
+
+	return &customer, nil
 }
 
 func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {

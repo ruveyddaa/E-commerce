@@ -1,15 +1,12 @@
 package internal
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg"
-	"tesodev-korpes/shared/config"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -55,58 +52,15 @@ func (h *Handler) GetByID(c echo.Context) error {
 		return pkg.Internal(err)
 	}
 
-	customer, err := fetchCustomerByID(order.CustomerId)
+	customer, err := h.service.FetchCustomerByID(order.CustomerId)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
 		return pkg.Internal(errors.New("failed to fetch customer info"))
 	}
 
 	response := ToOrderWithCustomerResponse(order, customer)
-
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
 	return c.JSON(http.StatusOK, response)
-}
-
-// Customer API'ye HTTP GET atan yardımcı fonksiyon
-type OrderWithCustomerResponse struct {
-	types.OrderResponseModel
-	Customer types.CustomerResponseModel `json:"customer,omitempty"`
-}
-
-func fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
-	if customerID == "" {
-		return nil, fmt.Errorf("customerID is empty")
-	}
-
-	baseURL := config.GetServiceURLs().CustomerServiceURL
-
-	url := fmt.Sprintf("%s/customer/%s", baseURL, customerID)
-
-	client := &http.Client{Timeout: 5 * time.Second}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("customer not found, status: %d", resp.StatusCode)
-	}
-
-	var customer types.CustomerResponseModel
-	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
-		return nil, err
-	}
-
-	return &customer, nil
 }
 
 func (h *Handler) CancelOrder(c echo.Context) error {
