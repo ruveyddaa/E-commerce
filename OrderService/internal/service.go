@@ -172,28 +172,36 @@ func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseM
 	}
 
 	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
+	fmt.Printf("Fetching customer from URL: %s\n", url)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
+		fmt.Printf("Error creating request: %v\n", err)
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
+		fmt.Printf("Error making HTTP request: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	fmt.Printf("Customer service response status: %d\n", resp.StatusCode)
+
 	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("Customer service returned non-OK status: %d\n", resp.StatusCode)
 		return nil, nil
 	}
 
 	var customer types.CustomerResponseModel
 	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
+		fmt.Printf("Error decoding customer response: %v\n", err)
 		return nil, err
 	}
 
+	fmt.Printf("Successfully fetched customer: %s\n", customer.Id)
 	return &customer, nil
 }
 

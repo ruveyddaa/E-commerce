@@ -3,7 +3,7 @@ package types
 import "time"
 
 type CreateOrderRequestModel struct {
-	CustomerId      string      `bson:"customer_id" json:"customer_id" validate:"required"`
+	CustomerId      string      `bson:"customer_id" json:"customer_id,omitempty"`
 	Items           []OrderItem `bson:"items" json:"items" validate:"required,dive,required"`
 	ShippingAddress Address     `bson:"shipping_address" json:"shipping_address" validate:"required"`
 	BillingAddress  Address     `bson:"billing_address" json:"billing_address" validate:"required"`

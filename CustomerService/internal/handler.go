@@ -4,15 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	_ "github.com/dgrijalva/jwt-go"
-
 	"net/http"
 	"strconv"
 	"tesodev-korpes/CustomerService/authentication"
 	"tesodev-korpes/CustomerService/internal/types"
 	"tesodev-korpes/CustomerService/validatorCustom"
 	"tesodev-korpes/pkg"
-	_ "tesodev-korpes/pkg/middleware"
 
 	"github.com/labstack/gommon/log"
 
@@ -42,14 +39,22 @@ func NewHandler(e *echo.Echo, service *Service) {
 
 	g := e.Group("/customer")
 	g.GET("/:id", handler.GetByID)
+	g.GET("/email/:email", handler.GetByEmail)
 	g.POST("/", handler.Create)
 	g.PUT("/:id", handler.Update)
 	g.DELETE("/:id", handler.Delete)
 	g.GET("/list", handler.GetListCustomer)
 
 	e.POST("/login", handler.Login)
-	//e.GET("/verify", handler.Verify)
+	e.GET("/verify", handler.Verify)
 }
+
+type LoginResponse struct {
+	Token   string                       `json:"token"`
+	User    *types.CustomerResponseModel `json:"user"`
+	Message string                       `json:"message"`
+}
+
 func (h *Handler) Login(c echo.Context) error {
 	var req types.LoginRequestModel
 
@@ -57,8 +62,24 @@ func (h *Handler) Login(c echo.Context) error {
 		log.Error("Bind error: ", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
 	}
+
+	// Validate the request
+	if err := h.validate.Struct(req); err != nil {
+		if validationErrs, ok := err.(validator.ValidationErrors); ok {
+			var details []pkg.ValidationErrorDetail
+			for _, e := range validationErrs {
+				details = append(details, pkg.ValidationErrorDetail{
+					Rule:    e.Tag(),
+					Message: fmt.Sprintf("The '%s' field failed on the '%s' validation", e.Field(), e.Tag()),
+				})
+			}
+			return pkg.ValidationFailed(details, pkg.ValidationErrorMessages[pkg.ResourceCustomerCode422101])
+		}
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
+	}
+
 	email := req.Email
-	log.Info("Extracted email: ", email)
+	log.Info("Login attempt for email: ", email)
 
 	if email == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "email is required"})
@@ -70,53 +91,82 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
 	if user == nil {
-		log.Warn("User not found")
+		log.Warn("User not found for email: ", email)
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 	}
 
 	ok, err := authentication.CheckPasswordHash(req.Password, user.Password)
-
 	if err != nil {
 		log.Error("Password check failed: ", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Password check failed"})
 	}
 	if !ok {
-		log.Warn("Password mismatch")
+		log.Warn("Password mismatch for email: ", email)
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
 	}
-	//user.Token = authentication.CreateJWT(user.Id, user.FirstName, user.LastName, "secret")
-	resp := c.JSON(http.StatusOK, user)
-	log.Info("Status Ok")
-	return resp
+
+	// Generate JWT token
+	token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
+	if err != nil {
+		log.Error("Token generation failed: ", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+	}
+
+	// Convert to response model
+	userResponse := ToCustomerResponse(user)
+
+	response := LoginResponse{
+		Token:   token,
+		User:    userResponse,
+		Message: "Login successful",
+	}
+
+	log.Info("Login successful for email: ", email)
+	return c.JSON(http.StatusOK, response)
 }
 
-/*
-	func (h *Handler) Verify(c echo.Context) error {
-		authHeader := c.Request().Header.Get("Authentication")
-		token, err := jwt.ParseWithClaims(authHeader, &authentication.Claims{}, func(token *jwt.Token) (interface{}, error) {
-			return authentication.SecretKey, nil
-		})
-		if err != nil || !token.Valid {
-			c.Logger().Error("Token verification failed: ", err)
-			return echo.ErrUnauthorized
-		}
-		claims := token.Claims.(*authentication.Claims)
-		userID := claims.Id
-
-		exists, err := h.service.GetByID(c.Request().Context(), userID)
-		if err != nil {
-			c.Logger().Error("Error checking user existence: ", err)
-			return echo.ErrInternalServerError
-		}
-
-		if exists != nil {
-			c.Logger().Error("User does not exist")
-			return echo.ErrUnauthorized
-		}
-
-		return c.String(http.StatusOK, "Token verified and user exists")
+func (h *Handler) Verify(c echo.Context) error {
+	authHeader := c.Request().Header.Get("Authorization")
+	if authHeader == "" {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "missing authorization header"})
 	}
-*/
+
+	tokenString := c.Request().Header.Get("Authorization")
+	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+		tokenString = tokenString[7:]
+	}
+
+	claims, err := authentication.VerifyJWT(tokenString)
+	if err != nil {
+		log.Error("Token verification failed: ", err)
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid or expired token"})
+	}
+
+	// Verify user still exists in database
+	user, err := h.service.GetByEmail(c.Request().Context(), claims.Email)
+	if err != nil {
+		log.Error("Error checking user existence: ", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	if user == nil {
+		log.Error("User does not exist in database")
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User not found"})
+	}
+
+	response := map[string]interface{}{
+		"message": "Token verified successfully",
+		"user": map[string]interface{}{
+			"id":         claims.Id,
+			"email":      claims.Email,
+			"first_name": claims.FirstName,
+			"last_name":  claims.LastName,
+		},
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
 func (h *Handler) GetByEmail(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	email := c.Param("email")

@@ -1,10 +1,10 @@
 package middleware
 
-/*
 import (
-	"github.com/labstack/echo/v4"
 	"net/http"
 	"strings"
+
+	"github.com/labstack/echo/v4"
 	"tesodev-korpes/CustomerService/authentication"
 )
 
@@ -19,6 +19,9 @@ func Authenticate(next echo.HandlerFunc) echo.HandlerFunc {
 			{Method: "GET", Path: "/verify"},
 			{Method: "GET", Path: "/swagger/*"},
 			{Method: "GET", Path: "/customers"},
+			{Method: "GET", Path: "/docs/*"},
+			{Method: "GET", Path: "/order/swagger/*"},
+			{Method: "GET", Path: "/customer/"},
 		}
 
 		// Check if the current request should be skipped
@@ -29,21 +32,28 @@ func Authenticate(next echo.HandlerFunc) echo.HandlerFunc {
 				return next(c) // Skip the middleware
 			}
 		}
-		authHeader := c.Request().Header.Get("Authentication")
+
+		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized, "missing token")
+			return echo.NewHTTPError(http.StatusUnauthorized, "missing authorization header")
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid authorization header format")
+		}
+
 		claims, err := authentication.VerifyJWT(tokenString)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
 		}
 
-		// Kullanıcı ID'sini context'e yerleştir (isteğe bağlı)
+		// Set user information in context for use in handlers
 		c.Set("userID", claims.Id)
+		c.Set("userEmail", claims.Email)
+		c.Set("userFirstName", claims.FirstName)
+		c.Set("userLastName", claims.LastName)
 
 		return next(c)
 	}
 }
-*/

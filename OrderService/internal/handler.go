@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg"
 
@@ -40,19 +41,31 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.PATCH("/:id/deliver", handler.DeliverOrder)
 	g.DELETE("/cancel/:id", handler.CancelOrder)
 	g.GET("/list", handler.GetAllOrders)
-
 }
 
 func (h *Handler) Create(c echo.Context) error {
+	// Get user information from JWT token
+	userID, ok := c.Get("userID").(string)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User ID not found in token"})
+	}
+
+	userEmail, ok := c.Get("userEmail").(string)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User email not found in token"})
+	}
+
 	var req types.CreateOrderRequestModel
 
 	if err := c.Bind(&req); err != nil {
 		return pkg.BadRequest("Geçersiz istek verisi: " + err.Error())
 	}
 
+	// Set the customer ID from JWT token before validation
+	req.CustomerId = userID
+
 	err := h.validate.Struct(req)
 	if err != nil {
-
 		if validationErrs, ok := err.(validator.ValidationErrors); ok {
 			var details []pkg.ValidationErrorDetail
 
@@ -67,6 +80,16 @@ func (h *Handler) Create(c echo.Context) error {
 		}
 	}
 
+	// Validate customer exists in Customer Service
+	customer, err := h.service.fetchCustomerByID(userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Customer service connection failed"})
+	}
+
+	if customer == nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Customer not found. Please register first."})
+	}
+
 	order := FromCreateOrderRequest(&req)
 
 	createdID, err := h.service.Create(c.Request().Context(), order)
@@ -79,7 +102,17 @@ func (h *Handler) Create(c echo.Context) error {
 		return pkg.Internal(err, "Oluşturulan sipariş alınamadı")
 	}
 
-	return c.JSON(http.StatusCreated, createdOrder)
+	// Add user information to response
+	response := map[string]interface{}{
+		"order": createdOrder,
+		"user": map[string]interface{}{
+			"id":    userID,
+			"email": userEmail,
+		},
+		"message": "Order created successfully",
+	}
+
+	return c.JSON(http.StatusCreated, response)
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
