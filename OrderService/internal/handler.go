@@ -8,6 +8,7 @@ import (
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -20,11 +21,18 @@ import (
 // @name Authorization
 
 type Handler struct {
-	service *Service
+	service  *Service
+	validate *validator.Validate
 }
 
 func NewHandler(e *echo.Echo, service *Service) {
-	handler := &Handler{service: service}
+	validate := validator.New()
+
+	handler := &Handler{
+		service:  service,
+		validate: validate,
+	}
+
 	g := e.Group("/order")
 	g.POST("", handler.Create)
 	g.GET("/:id", handler.GetByID)
@@ -40,6 +48,23 @@ func (h *Handler) Create(c echo.Context) error {
 
 	if err := c.Bind(&req); err != nil {
 		return pkg.BadRequest("Geçersiz istek verisi: " + err.Error())
+	}
+
+	err := h.validate.Struct(req)
+	if err != nil {
+
+		if validationErrs, ok := err.(validator.ValidationErrors); ok {
+			var details []pkg.ValidationErrorDetail
+
+			for _, e := range validationErrs {
+				details = append(details, pkg.ValidationErrorDetail{
+					Rule:    e.Tag(),
+					Message: fmt.Sprintf("The '%s' field failed on the '%s", e.Field(), e.Tag()),
+				})
+			}
+
+			return pkg.ValidationFailed(details, pkg.ValidationErrorMessages[pkg.ResourceCustomerCode422101])
+		}
 	}
 
 	order := FromCreateOrderRequest(&req)

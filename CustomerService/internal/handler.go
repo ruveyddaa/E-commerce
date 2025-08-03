@@ -2,17 +2,21 @@ package internal
 
 import (
 	"errors"
+	"fmt"
+
 	_ "github.com/dgrijalva/jwt-go"
 
-	"github.com/labstack/gommon/log"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/CustomerService/authentication"
 	"tesodev-korpes/CustomerService/internal/types"
-	"tesodev-korpes/CustomerService/validator"
+	"tesodev-korpes/CustomerService/validatorCustom"
 	"tesodev-korpes/pkg"
 	_ "tesodev-korpes/pkg/middleware"
 
+	"github.com/labstack/gommon/log"
+
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -25,11 +29,16 @@ import (
 // @name Authorization
 
 type Handler struct {
-	service *Service
+	service  *Service
+	validate *validator.Validate
 }
 
 func NewHandler(e *echo.Echo, service *Service) {
-	handler := &Handler{service: service}
+	validate := validator.New()
+	handler := &Handler{
+		service:  service,
+		validate: validate,
+	}
 
 	g := e.Group("/customer")
 	g.GET("/:id", handler.GetByID)
@@ -112,7 +121,7 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	email := c.Param("email")
 
-	if !validator.IsValidEmail(email) {
+	if !validatorCustom.IsValidEmail(email) {
 		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
 	}
 
@@ -176,9 +185,27 @@ func (h *Handler) GetByID(c echo.Context) error {
 // @Router /customer/ [post]
 func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateCustomerRequestModel
+	fmt.Println("create handler custom")
 
 	if err := c.Bind(&req); err != nil {
 		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400102])
+	}
+
+	err := h.validate.Struct(req)
+	if err != nil {
+		if validationErrs, ok := err.(validator.ValidationErrors); ok {
+			var details []pkg.ValidationErrorDetail
+			fmt.Println("valide içi customer")
+
+			for _, e := range validationErrs {
+				details = append(details, pkg.ValidationErrorDetail{
+					Rule:    e.Tag(),
+					Message: fmt.Sprintf("The '%s' field failed on the '%s", e.Field(), e.Tag()),
+				})
+			}
+
+			return pkg.ValidationFailed(details, pkg.ValidationErrorMessages[pkg.ResourceCustomerCode422101])
+		}
 	}
 
 	createdID, err := h.service.Create(c.Request().Context(), &req)
