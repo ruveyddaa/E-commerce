@@ -49,12 +49,6 @@ func NewHandler(e *echo.Echo, service *Service) {
 	e.GET("/verify", handler.Verify)
 }
 
-type LoginResponse struct {
-	Token   string                       `json:"token"`
-	User    *types.CustomerResponseModel `json:"user"`
-	Message string                       `json:"message"`
-}
-
 func (h *Handler) Login(c echo.Context) error {
 	var req types.LoginRequestModel
 
@@ -115,7 +109,7 @@ func (h *Handler) Login(c echo.Context) error {
 	// Convert to response model
 	userResponse := ToCustomerResponse(user)
 
-	response := LoginResponse{
+	response := types.LoginResponse{
 		Token:   token,
 		User:    userResponse,
 		Message: "Login successful",
