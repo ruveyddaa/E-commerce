@@ -55,7 +55,7 @@ func (r *Repository) Create(ctx context.Context, customer *types.Customer) (stri
 func (r *Repository) Update(ctx context.Context, id string, customer *types.Customer) error {
 	filter := bson.M{"_id": id}
 	update := bson.M{
-		"$set": bson.M{ // todo mongo operatorlerle çözebilrisin
+		"$set": bson.M{
 			"first_name": customer.FirstName,
 			"last_name":  customer.LastName,
 			"email":      customer.Email,
