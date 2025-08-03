@@ -46,7 +46,6 @@ func (s *Service) Create(ctx context.Context, order *types.Order) (string, error
 	order.CreatedAt = time.Now()
 	order.UpdatedAt = time.Now()
 	order.Status = types.OrderOrdered
-	order.IsActive = true
 	order.TotalPrice = calculateTotalPrice(order.Items)
 
 	id, err := s.repo.Create(ctx, order)

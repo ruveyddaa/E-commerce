@@ -17,7 +17,6 @@ type OrderResponseModel struct {
 	BillingAddress  Address     `bson:"billing_address" json:"billing_address"`
 	TotalPrice      float64     `bson:"total_price" json:"total_price"`
 	Status          OrderStatus `bson:"status" json:"status"`
-	IsActive        bool        `bson:"is_active" json:"is_active"`
 	CreatedAt       time.Time   `bson:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `bson:"updated_at" json:"updated_at"`
 }
@@ -31,7 +30,6 @@ type CustomerResponseModel struct {
 	Address   []Address `json:"address" bson:"address"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
-	IsActive  bool      `json:"is_active" bson:"is_active"`
 }
 
 type Pagination struct {
