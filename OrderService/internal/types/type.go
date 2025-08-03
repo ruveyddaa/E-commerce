@@ -23,15 +23,15 @@ type OrderResponseModel struct {
 }
 
 type CustomerResponseModel struct {
-	Id        string            `json:"id" bson:"_id,omitempty"`
-	FirstName string            `json:"first_name" bson:"first_name"`
-	LastName  string            `json:"last_name" bson:"last_name"`
-	Email     map[string]string `json:"email" bson:"email"`
-	Phone     []Phone           `json:"phone" bson:"phone"`
-	Address   []Address         `json:"address" bson:"address"`
-	CreatedAt time.Time         `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time         `json:"updated_at" bson:"updated_at"`
-	IsActive  bool              `json:"is_active" bson:"is_active"`
+	Id        string    `json:"id" bson:"_id,omitempty"`
+	FirstName string    `json:"first_name" bson:"first_name"`
+	LastName  string    `json:"last_name" bson:"last_name"`
+	Email     string    `json:"email" bson:"email"`
+	Phone     []Phone   `json:"phone" bson:"phone"`
+	Address   []Address `json:"address" bson:"address"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	IsActive  bool      `json:"is_active" bson:"is_active"`
 }
 
 type Pagination struct {
