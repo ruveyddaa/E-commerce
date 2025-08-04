@@ -30,18 +30,6 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*types.Customer, e
 	}
 	return &customer, nil
 }
-func (r *Repository) GetByEmail(ctx context.Context, email string) (*types.Customer, error) {
-	var customer types.Customer
-
-	filter := bson.M{"email": email}
-
-	err := r.collection.FindOne(ctx, filter).Decode(&customer)
-	if err != nil {
-		return nil, err // mongo.ErrNoDocuments vs. service üstlenir
-	}
-
-	return &customer, nil
-}
 
 func (r *Repository) Create(ctx context.Context, customer *types.Customer) (string, error) {
 

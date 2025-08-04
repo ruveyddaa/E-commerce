@@ -3,14 +3,11 @@ package internal
 import (
 	"context"
 	"errors"
-	"fmt"
+	"github.com/google/uuid"
 	"tesodev-korpes/OrderService/internal/types"
 	"time"
 
-	"github.com/google/uuid"
-
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -87,32 +84,6 @@ func (r *Repository) Cancel(id string) error {
 
 	if res.MatchedCount == 0 {
 		return errors.New("order not found")
-	}
-
-	return nil
-}
-
-func (r *Repository) SoftDeleteByID(ctx context.Context, id string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid id format: %w", err)
-	}
-
-	filter := bson.M{"_id": objectID}
-	update := bson.M{
-		"$set": bson.M{
-			"is_delete":  true,
-			"updated_at": time.Now(),
-		},
-	}
-
-	res, err := r.collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-
-	if res.MatchedCount == 0 {
-		return mongo.ErrNoDocuments
 	}
 
 	return nil

@@ -1,4 +1,3 @@
-// File: service.go
 package internal
 
 import (
@@ -6,11 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"tesodev-korpes/pkg/errorPackage"
 	"time"
-
-	"github.com/google/uuid"
 
 	"tesodev-korpes/OrderService/internal/types"
 
@@ -137,27 +135,6 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderCanceled)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (s *Service) DeleteOrder(ctx context.Context, id string) error {
-	order, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
-		}
-		return err
-	}
-
-	if order.Status != types.OrderDelivered && order.Status != types.OrderCanceled {
-		return errorPackage.InvalidOrderStateWithStatus("DELETE", string(order.Status))
-	}
-
-	err = s.repo.SoftDeleteByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("failed to soft delete order: %w", err)
 	}
 
 	return nil

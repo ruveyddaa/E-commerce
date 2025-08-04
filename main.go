@@ -29,7 +29,6 @@ func main() {
 	customerEcho.Use(middleware.RecoveryMiddleware)
 	customerEcho.Use(middleware.ErrorHandler())
 	customerEcho.GET("/swagger/*", echoSwagger.WrapHandler)
-	customerEcho.Use(middleware.Authenticate)
 
 	orderEcho := echo.New()
 	orderEcho.Use(middleware.CorrelationIdMiddleware())
@@ -37,7 +36,6 @@ func main() {
 	orderEcho.Use(middleware.RecoveryMiddleware)
 	orderEcho.Use(middleware.ErrorHandler())
 	orderEcho.GET("/swagger/*", echoSwagger.WrapHandler)
-	orderEcho.Use(middleware.Authenticate)
 
 	go func() {
 		customercmd.BootCustomerService(client, customerEcho)
