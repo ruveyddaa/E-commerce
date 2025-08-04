@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/errorPackage"
 	"time"
 
@@ -153,7 +152,7 @@ func (s *Service) DeleteOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != types.OrderDelivered && order.Status != types.OrderCanceled {
-		return pkg.InvalidOrderStateWithStatus("DELETE", string(order.Status))
+		return errorPackage.InvalidOrderStateWithStatus("DELETE", string(order.Status))
 	}
 
 	err = s.repo.SoftDeleteByID(ctx, id)

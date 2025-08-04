@@ -197,7 +197,7 @@ func (h *Handler) DeleteOrder(c echo.Context) error {
 		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
 			return c.JSON(http.StatusNotFound, echo.Map{"message": "Order not found"})
 		}
-		if errResp, ok := err.(*pkg.AppError); ok && errResp.Code == pkg.CodeOrderStateConflict {
+		if errResp, ok := err.(*errorPackage.AppError); ok && errResp.Code == errorPackage.CodeOrderStateConflict {
 			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
 		}
 
