@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	// env: dev, qa, prod
+
 	dbConf := config.GetDBConfig("dev")
 
 	client, err := pkg.GetMongoClient(dbConf.MongoDuration, dbConf.MongoClientURI)
@@ -23,7 +23,6 @@ func main() {
 	}
 	fmt.Println("connecting db")
 
-	// === CUSTOMER SERVICE ===
 	customerEcho := echo.New()
 	customerEcho.Use(middleware.CorrelationIdMiddleware())
 	customerEcho.Use(middleware.LoggingMiddleware)
@@ -32,7 +31,6 @@ func main() {
 	customerEcho.GET("/swagger/*", echoSwagger.WrapHandler)
 	customerEcho.Use(middleware.Authenticate)
 
-	// === ORDER SERVICE ===
 	orderEcho := echo.New()
 	orderEcho.Use(middleware.CorrelationIdMiddleware())
 	orderEcho.Use(middleware.LoggingMiddleware)

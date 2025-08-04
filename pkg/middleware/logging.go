@@ -31,7 +31,7 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			"latency":       latency,
 			"ip":            ip,
 			"correlationID": correlationID,
-		}).Info("HTTP isteği loglandı")
+		})
 
 		return err
 	}

@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"net/http"
+	"tesodev-korpes/pkg/errorPackage"
 )
 
 type ValidationErrorDetail struct {
@@ -11,18 +12,18 @@ type ValidationErrorDetail struct {
 }
 
 type AppValidationError struct {
-	*AppError
+	*errorPackage.AppError
 	Details []ValidationErrorDetail `json:"details"`
 }
 
 func ValidationFailed(details []ValidationErrorDetail, message string) *AppValidationError {
-	baseErr := &AppError{
-		HTTPStatus: http.StatusUnprocessableEntity, // 422, validasyon hataları için
-		Code:       CodeValidation,
+	baseErr := &errorPackage.AppError{
+		HTTPStatus: http.StatusUnprocessableEntity, // 422, for validation errors
+		Code:       errorPackage.CodeValidation,
 		Message:    message,
 	}
 
-	fmt.Println("error validatedesins")
+	fmt.Println("in here error validation")
 	return &AppValidationError{
 		AppError: baseErr,
 		Details:  details,

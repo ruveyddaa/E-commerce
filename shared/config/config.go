@@ -32,13 +32,12 @@ var cfgs = map[string]DbConfig{
 var serviceUrls ServiceUrls
 
 func init() {
-	// Ortak env yüklemesi sadece bir kez yapılır
+
 	if err := godotenv.Load("./media/.env"); err != nil {
 		panic("Environment variable did not load")
 	}
 	fmt.Println("Environment variables loaded")
 
-	// Servis URL'leri burada alınır
 	serviceUrls = ServiceUrls{
 		CustomerServiceURL: os.Getenv("CUSTOMER_SERVICE_URL"),
 	}

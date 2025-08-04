@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"tesodev-korpes/pkg/errorPackage"
 
 	"net/http"
 	"strconv"
@@ -67,7 +68,7 @@ func (h *Handler) Login(c echo.Context) error {
 					Message: fmt.Sprintf("The '%s' field failed on the '%s' validation", e.Field(), e.Tag()),
 				})
 			}
-			return pkg.ValidationFailed(details, pkg.ValidationErrorMessages[pkg.ResourceCustomerCode422101])
+			return pkg.ValidationFailed(details, errorPackage.ValidationErrorMessages[errorPackage.ResourceCustomerCode422101])
 		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
 	}
@@ -166,17 +167,17 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 	email := c.Param("email")
 
 	if !validatorCustom.IsValidEmail(email) {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400101])
 	}
 
 	customer, err := h.service.GetByEmail(c.Request().Context(), email)
 	if err != nil {
 
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
+			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
+		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
@@ -199,17 +200,17 @@ func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
 	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400101])
 	}
 
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
+			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
+		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
@@ -232,7 +233,7 @@ func (h *Handler) Create(c echo.Context) error {
 	fmt.Println("create handler custom")
 
 	if err := c.Bind(&req); err != nil {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400102])
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400102])
 	}
 
 	err := h.validate.Struct(req)
@@ -248,13 +249,13 @@ func (h *Handler) Create(c echo.Context) error {
 				})
 			}
 
-			return pkg.ValidationFailed(details, pkg.ValidationErrorMessages[pkg.ResourceCustomerCode422101])
+			return pkg.ValidationFailed(details, errorPackage.ValidationErrorMessages[errorPackage.ResourceCustomerCode422101])
 		}
 	}
 
 	createdID, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
+		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{
@@ -280,16 +281,16 @@ func (h *Handler) Create(c echo.Context) error {
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
 	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400101])
 	}
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400102])
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400102])
 	}
 
 	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
 	if err != nil {
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
+		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
 
 	response := ToCustomerResponse(updatedCustomer)
@@ -312,10 +313,10 @@ func (h *Handler) Update(c echo.Context) error {
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
 	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return pkg.BadRequest(pkg.BadRequestMessages[pkg.ResourceCustomerCode400101])
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400101])
 	}
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
-		return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
+		return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -353,10 +354,10 @@ func (h *Handler) GetListCustomer(c echo.Context) error {
 	customers, err := h.service.Get(c.Request().Context(), params)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return pkg.NotFound(pkg.NotFoundMessages[pkg.ResourceCustomerCode404101])
+			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
 		}
 
-		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceCustomerCode500101])
+		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})

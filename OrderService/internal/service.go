@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"net/http"
-	"tesodev-korpes/pkg"
+	"tesodev-korpes/pkg/errorPackage"
 	"time"
 
 	"tesodev-korpes/OrderService/internal/types"
@@ -34,12 +34,12 @@ func NewService(repo *Repository, customerServiceURL string) *Service {
 
 func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
 	if order.CustomerId == "" {
-		return "", errors.New("customerId bos olamaz")
+		return "", errors.New("customerId not found ")
 	}
 
 	customer, err := s.fetchCustomerByID(order.CustomerId)
 	if err != nil || customer == nil {
-		return "", fmt.Errorf("customer kontrolu basarisiz")
+		return "", fmt.Errorf("customer control unsuccessful")
 	}
 
 	order.Id = uuid.NewString()
@@ -86,7 +86,7 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != types.OrderOrdered {
-		return pkg.InvalidOrderStateWithStatus("ship", string(order.Status))
+		return errorPackage.InvalidOrderStateWithStatus("ship", string(order.Status))
 	}
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderShipped)
@@ -107,7 +107,7 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != types.OrderShipped {
-		return pkg.InvalidOrderStateWithStatus("deliver", string(order.Status))
+		return errorPackage.InvalidOrderStateWithStatus("deliver", string(order.Status))
 	}
 
 	err = s.repo.UpdateStatusByID(ctx, id, types.OrderDelivered)
@@ -129,7 +129,7 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 
 	switch order.Status {
 	case types.OrderShipped, types.OrderDelivered, types.OrderCanceled:
-		return pkg.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
+		return errorPackage.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
 
 	}
 

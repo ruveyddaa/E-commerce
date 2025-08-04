@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"tesodev-korpes/pkg"
+	"tesodev-korpes/pkg/errorPackage"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -41,8 +42,8 @@ func ErrorHandler() echo.MiddlewareFunc {
 	}
 }
 
-func toAppError(err error) *pkg.AppError {
-	var appErr *pkg.AppError
+func toAppError(err error) *errorPackage.AppError {
+	var appErr *errorPackage.AppError
 
 	if errors.As(err, &appErr) {
 		return appErr
@@ -59,19 +60,19 @@ func toAppError(err error) *pkg.AppError {
 	// 		return pkg.Wrap(httpErr, httpErr.Code, pkg.CodeInternalFrameworkError, pkg.InternalServerErrorMessages[pkg.ResourceFrameworkCode500401])
 	// 	}
 	// }
-	return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceServiceCode500301])
+	return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceServiceCode500301])
 }
 
-func buildAPIResponse(err *pkg.AppError, c echo.Context) APIErrorResponse {
-	corralationID := c.Response().Header().Get(echo.HeaderXCorrelationID)
-	if corralationID == "" {
-		corralationID = "not-available"
+func buildAPIResponse(err *errorPackage.AppError, c echo.Context) APIErrorResponse {
+	correlationID := c.Response().Header().Get(echo.HeaderXCorrelationID)
+	if correlationID == "" {
+		correlationID = "not-available"
 	}
 
 	var resp APIErrorResponse
 	resp.Error.Code = err.Code
 	resp.Error.Message = err.Message
-	resp.CorralationID = corralationID
+	resp.CorralationID = correlationID
 	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return resp
 }

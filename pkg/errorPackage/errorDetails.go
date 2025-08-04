@@ -1,4 +1,4 @@
-package pkg
+package errorPackage
 
 const (
 	CodeUnknown                = "UNKNOWN"

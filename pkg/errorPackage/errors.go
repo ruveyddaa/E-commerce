@@ -1,4 +1,4 @@
-package pkg
+package errorPackage
 
 import (
 	"fmt"
@@ -61,7 +61,7 @@ func Forbidden() *AppError {
 }
 
 func Internal(err error, message string) *AppError {
-	log.Error("Internal error:", err) // ← HATA MESAJI BURADA ÇIKAR
+	log.Error("Internal error:", err)
 	return Wrap(err, http.StatusInternalServerError, CodeInternalError, message)
 }
 

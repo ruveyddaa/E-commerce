@@ -24,7 +24,6 @@ func Authenticate(next echo.HandlerFunc) echo.HandlerFunc {
 			{Method: "GET", Path: "/customer/"},
 		}
 
-		// Check if the current request should be skipped
 		reqPath := c.Path()
 		reqMethod := c.Request().Method
 		for _, condition := range skipConditions {
@@ -48,7 +47,6 @@ func Authenticate(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "invalid or expired token")
 		}
 
-		// Set user information in context for use in handlers
 		c.Set("userID", claims.Id)
 		c.Set("userEmail", claims.Email)
 		c.Set("userFirstName", claims.FirstName)
