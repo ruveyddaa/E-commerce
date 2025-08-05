@@ -46,7 +46,7 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.GET("/list", handler.GetListCustomer)
 
 	e.POST("/login", handler.Login)
-	e.GET("/verify", handler.Verify)
+	e.GET("/verify", handler.VerifyAuthentication)
 }
 
 func (h *Handler) Login(c echo.Context) error {
@@ -100,17 +100,17 @@ func (h *Handler) Login(c echo.Context) error {
 	}
 
 	// Generate JWT token
-	token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
+	/*token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
 	if err != nil {
 		log.Error("Token generation failed: ", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 	}
-
+	*/
 	// Convert to response model
 	userResponse := ToCustomerResponse(user)
 
 	response := types.LoginResponse{
-		Token:   token,
+		//Token:   token,
 		User:    userResponse,
 		Message: "Login successful",
 	}
@@ -119,7 +119,8 @@ func (h *Handler) Login(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func (h *Handler) Verify(c echo.Context) error {
+// burdaki authorization token dogrulaması için authorizationun kendisyle alakası yok
+func (h *Handler) VerifyAuthentication(c echo.Context) error {
 	authHeader := c.Request().Header.Get("Authorization")
 	if authHeader == "" {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "missing authorization header"})
