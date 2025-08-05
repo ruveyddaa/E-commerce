@@ -46,62 +46,25 @@ func NewHandler(e *echo.Echo, service *Service) {
 }
 
 func (h *Handler) Create(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string)
-	userID, ok := c.Get("userID").(string)
-	if !ok {
-		return errorPackage.Unauthorized()
-	}
-	userEmail, ok := c.Get("userEmail").(string)
-	if !ok {
-		return errorPackage.Unauthorized()
-	}
 	var req types.CreateOrderRequestModel
-	if err := c.Bind(&req); err != nil {
-		return errorPackage.BadRequest("Invalid request data: " + err.Error())
-	}
-	req.CustomerId = userID
 
-	if err := h.validate.Struct(req); err != nil {
-		if validationErrs, ok := err.(validator.ValidationErrors); ok {
-			var details []pkg.ValidationErrorDetail
-			for _, e := range validationErrs {
-				details = append(details, pkg.ValidationErrorDetail{
-					Rule:    e.Tag(),
-					Message: fmt.Sprintf("The '%s' field failed on the '%s' rule", e.Field(), e.Tag()),
-				})
-			}
-			return pkg.ValidationFailed(details, errorPackage.ValidationErrorMessages[errorPackage.ResourceCustomerCode422101])
-		}
-		return errorPackage.BadRequest("Validation error")
+	if err := c.Bind(&req); err != nil {
+		return errorPackage.BadRequest("Geçersiz istek verisi: " + err.Error())
 	}
-	customer, err := h.service.fetchCustomerByID(userID)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, "Customer service connection failed")
-	}
-	if customer == nil {
-		return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
-	}
+
 	order := FromCreateOrderRequest(&req)
+
 	createdID, err := h.service.Create(c.Request().Context(), order)
 	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		return errorPackage.Internal(err, err.Error())
 	}
+
 	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
 	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, "Failed to retrieve the created order")
+		return errorPackage.Internal(err, "Oluşturulan sipariş alınamadı")
 	}
-	pkg.LogInfoWithCorrelation("Order created successfully", correlationID)
-	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"order": createdOrder,
-		"user": map[string]interface{}{
-			"id":    userID,
-			"email": userEmail,
-		},
-		"message": "Order created successfully",
-	})
+
+	return c.JSON(http.StatusCreated, createdOrder)
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
