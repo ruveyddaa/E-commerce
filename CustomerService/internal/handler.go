@@ -49,12 +49,6 @@ func NewHandler(e *echo.Echo, service *Service) {
 	e.GET("/verify", handler.Verify)
 }
 
-type LoginResponse struct {
-	Token   string                       `json:"token"`
-	User    *types.CustomerResponseModel `json:"user"`
-	Message string                       `json:"message"`
-}
-
 func (h *Handler) Login(c echo.Context) error {
 	var req types.LoginRequestModel
 
@@ -106,17 +100,17 @@ func (h *Handler) Login(c echo.Context) error {
 	}
 
 	// Generate JWT token
-	token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
-	if err != nil {
-		log.Error("Token generation failed: ", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
-	}
-
+	/*	token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
+		if err != nil {
+			log.Error("Token generation failed: ", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+		}
+	*/
 	// Convert to response model
 	userResponse := ToCustomerResponse(user)
 
-	response := LoginResponse{
-		Token:   token,
+	response := types.LoginResponse{
+		//	Token:   token,
 		User:    userResponse,
 		Message: "Login successful",
 	}
