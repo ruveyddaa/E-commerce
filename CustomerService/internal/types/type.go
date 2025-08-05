@@ -43,9 +43,8 @@ type LoginRequestModel struct {
 	Email    string `bson:"email" json:"email" validate:"required,email"` // <-- DÜZELTİLDİ
 	Password string `bson:"password" json:"password" validate:"required"`
 }
-
 type LoginResponse struct {
-	Token   string                 `json:"token"`
+	//Token   string                 `json:"token"`
 	User    *CustomerResponseModel `json:"user"`
 	Message string                 `json:"message"`
 }
