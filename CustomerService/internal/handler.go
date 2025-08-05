@@ -100,17 +100,17 @@ func (h *Handler) Login(c echo.Context) error {
 	}
 
 	// Generate JWT token
-	/*	token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
-		if err != nil {
-			log.Error("Token generation failed: ", err)
-			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
-		}
-	*/
+	token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
+	if err != nil {
+		log.Error("Token generation failed: ", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+	}
+
 	// Convert to response model
 	userResponse := ToCustomerResponse(user)
 
 	response := types.LoginResponse{
-		//	Token:   token,
+		Token:   token,
 		User:    userResponse,
 		Message: "Login successful",
 	}
