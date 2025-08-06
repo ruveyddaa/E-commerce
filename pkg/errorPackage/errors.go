@@ -69,3 +69,11 @@ func InvalidOrderStateWithStatus(action, currentStatus string) *AppError {
 	message := fmt.Sprintf("Cannot %s order while it is in '%s' status", action, currentStatus)
 	return New(http.StatusConflict, CodeOrderStateConflict, message)
 }
+
+func UnauthorizedInvalidLogin() *AppError {
+	return New(http.StatusUnauthorized, CodeUnauthorized, "Invalid email or password")
+}
+
+func UnauthorizedInvalidToken() *AppError {
+	return New(http.StatusUnauthorized, CodeUnauthorized, "Invalid or missing authorization token")
+}
