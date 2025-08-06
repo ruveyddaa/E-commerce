@@ -90,3 +90,10 @@ func ToVerifiedUserFromResponse(c *types.CustomerResponseModel) types.VerifiedUs
 		Email: c.Email,
 	}
 }
+
+func ToVerifyTokenResponse(user *types.CustomerResponseModel) types.VerifyTokenResponse {
+	return types.VerifyTokenResponse{
+		Message: "Token verified successfully",
+		User:    ToVerifiedUserFromResponse(user),
+	}
+}
