@@ -33,6 +33,8 @@ type CustomerResponseModel struct {
 	IsActive  bool      `bson:"is_active" json:"is_active"`
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
+	Role      string    `bson:"role" json:"role"` // role eklendi
+
 }
 
 type Pagination struct {

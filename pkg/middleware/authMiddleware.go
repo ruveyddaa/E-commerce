@@ -25,13 +25,15 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if err != nil {
 			return errorPackage.UnauthorizedInvalidToken()
 		}
+
 		customer, err := fetchCustomerByID("http://localhost:8001", claims.ID)
-		if err != nil || customer == nil {
-			fmt.Println(err)
+		if err != nil {
+			fmt.Println("ERR", err)
 			fmt.Println(customer)
 			return echo.NewHTTPError(http.StatusUnauthorized, "Müşteri bilgisi alınamadı")
 		}
 
+		fmt.Println(customer)
 		c.Set("userID", claims.ID)
 		c.Set("userRole", customer.Role)
 
