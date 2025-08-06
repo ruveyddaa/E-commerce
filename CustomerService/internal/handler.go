@@ -43,11 +43,11 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.PUT("/:id", handler.Update)
 	g.DELETE("/:id", handler.Delete)
 	g.GET("/list", handler.GetListCustomer)
+	g.GET("/verify", handler.VerifyAuthentication)
 
 	e.POST("/customer", handler.Create)
-
 	e.POST("/login", handler.Login)
-	e.GET("/verify", handler.VerifyAuthentication)
+
 }
 
 func (h *Handler) Login(c echo.Context) error {
@@ -107,22 +107,12 @@ func (h *Handler) Login(c echo.Context) error {
 func (h *Handler) VerifyAuthentication(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 
-	const bearerPrefix = "Bearer "
-
-	authHeader := c.Request().Header.Get("Authorization")
-	if authHeader == "" || len(authHeader) <= len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
+	userID, ok := c.Get("userID").(string)
+	if !ok || userID == "" {
 		return errorPackage.UnauthorizedInvalidToken()
 	}
 
-	tokenString := authHeader[len(bearerPrefix):]
-
-	claims, err := auth.VerifyJWT(tokenString)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.UnauthorizedInvalidToken()
-	}
-
-	user, err := h.service.GetByID(c.Request().Context(), claims.ID)
+	user, err := h.service.GetByID(c.Request().Context(), userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return errorPackage.UnauthorizedInvalidToken()
@@ -131,12 +121,8 @@ func (h *Handler) VerifyAuthentication(c echo.Context) error {
 		return errorPackage.Internal(err, "Failed to retrieve user from database")
 	}
 
-	response := types.VerifyTokenResponse{
-		Message: "Token verified successfully",
-		User:    ToVerifiedUserFromResponse(user),
-	}
+	response := ToVerifyTokenResponse(user)
 	return c.JSON(http.StatusOK, response)
-
 }
 
 func (h *Handler) GetByEmail(c echo.Context) error {
