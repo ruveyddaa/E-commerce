@@ -10,6 +10,11 @@ import (
 
 var jwtSecret = []byte("JWT_SECRET")
 
+type Claims struct {
+	ID string `json:"id"`
+	jwt.RegisteredClaims
+}
+
 func GenerateJWT(Id string) (string, error) {
 	claims := &Claims{
 		ID: Id,
