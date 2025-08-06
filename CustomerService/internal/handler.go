@@ -3,16 +3,15 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"tesodev-korpes/pkg/auth"
 	"tesodev-korpes/pkg/errorPackage"
+	"tesodev-korpes/pkg/middleware"
 
 	"net/http"
 	"strconv"
-	"tesodev-korpes/CustomerService/authentication"
 	"tesodev-korpes/CustomerService/internal/types"
 	"tesodev-korpes/CustomerService/validatorCustom"
 	"tesodev-korpes/pkg"
-
-	"github.com/labstack/gommon/log"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -38,129 +37,106 @@ func NewHandler(e *echo.Echo, service *Service) {
 		validate: validate,
 	}
 
-	g := e.Group("/customer")
+	g := e.Group("/customer", middleware.AuthMiddleware)
 	g.GET("/:id", handler.GetByID)
 	g.GET("/email/:email", handler.GetByEmail)
-	g.POST("/", handler.Create)
 	g.PUT("/:id", handler.Update)
 	g.DELETE("/:id", handler.Delete)
 	g.GET("/list", handler.GetListCustomer)
+
+	e.POST("/customer", handler.Create)
 
 	e.POST("/login", handler.Login)
 	e.GET("/verify", handler.VerifyAuthentication)
 }
 
 func (h *Handler) Login(c echo.Context) error {
-	var req types.LoginRequestModel
+	correlationID, _ := c.Get("CorrelationID").(string)
 
+	var req types.LoginRequestModel
 	if err := c.Bind(&req); err != nil {
-		log.Error("Bind error: ", err)
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid input"})
+		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceCustomerCode400102])
 	}
 
-	// Validate the request
 	if err := h.validate.Struct(req); err != nil {
 		if validationErrs, ok := err.(validator.ValidationErrors); ok {
 			var details []pkg.ValidationErrorDetail
 			for _, e := range validationErrs {
 				details = append(details, pkg.ValidationErrorDetail{
 					Rule:    e.Tag(),
-					Message: fmt.Sprintf("The '%s' field failed on the '%s' validation", e.Field(), e.Tag()),
+					Message: fmt.Sprintf("The '%s' field failed on the '%s'", e.Field(), e.Tag()),
 				})
 			}
 			return pkg.ValidationFailed(details, errorPackage.ValidationErrorMessages[errorPackage.ResourceCustomerCode422101])
 		}
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request data"})
 	}
 
-	email := req.Email
-	log.Info("Login attempt for email: ", email)
-
-	if email == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "email is required"})
-	}
-
-	user, err := h.service.GetByEmail(c.Request().Context(), email)
+	customer, err := h.service.GetByEmail(c.Request().Context(), req.Email)
 	if err != nil {
-		log.Error("GetByEmail error: ", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
-	}
-	if user == nil {
-		log.Warn("User not found for email: ", email)
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
-	}
-
-	ok, err := authentication.CheckPasswordHash(req.Password, user.Password)
-	if err != nil {
-		log.Error("Password check failed: ", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Password check failed"})
-	}
-	if !ok {
-		log.Warn("Password mismatch for email: ", email)
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials"})
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
+		}
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
 
-	// Generate JWT token
-	/*token, err := authentication.CreateJWT(user.Id, user.FirstName, user.LastName, user.Email)
+	valid, err := auth.VerifyPassword(req.Password, customer.Password)
 	if err != nil {
-		log.Error("Token generation failed: ", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return errorPackage.Internal(err, "An error occurred while verifying the password")
 	}
-	*/
-	// Convert to response model
-	userResponse := ToCustomerResponse(user)
+	if !valid {
+		return errorPackage.UnauthorizedInvalidLogin()
+	}
+
+	token, err := auth.GenerateJWT(customer.Id)
+	if err != nil {
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return errorPackage.Internal(err, "Failed to generate token")
+	}
 
 	response := types.LoginResponse{
-		//Token:   token,
-		User:    userResponse,
+		Token:   token,
+		User:    ToCustomerResponse(customer),
 		Message: "Login successful",
 	}
 
-	log.Info("Login successful for email: ", email)
 	return c.JSON(http.StatusOK, response)
 }
 
-// burdaki authorization token dogrulaması için authorizationun kendisyle alakası yok
 func (h *Handler) VerifyAuthentication(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+
+	const bearerPrefix = "Bearer "
+
 	authHeader := c.Request().Header.Get("Authorization")
-	if authHeader == "" {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "missing authorization header"})
+	if authHeader == "" || len(authHeader) <= len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
+		return errorPackage.UnauthorizedInvalidToken()
 	}
 
-	tokenString := c.Request().Header.Get("Authorization")
-	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
-		tokenString = tokenString[7:]
-	}
+	tokenString := authHeader[len(bearerPrefix):]
 
-	claims, err := authentication.VerifyJWT(tokenString)
+	claims, err := auth.VerifyJWT(tokenString)
 	if err != nil {
-		log.Error("Token verification failed: ", err)
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid or expired token"})
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return errorPackage.UnauthorizedInvalidToken()
 	}
 
-	// Verify user still exists in database
-	user, err := h.service.GetByEmail(c.Request().Context(), claims.Email)
+	user, err := h.service.GetByID(c.Request().Context(), claims.ID)
 	if err != nil {
-		log.Error("Error checking user existence: ", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return errorPackage.UnauthorizedInvalidToken()
+		}
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return errorPackage.Internal(err, "Failed to retrieve user from database")
 	}
 
-	if user == nil {
-		log.Error("User does not exist in database")
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "User not found"})
+	response := types.VerifyTokenResponse{
+		Message: "Token verified successfully",
+		User:    ToVerifiedUserFromResponse(user),
 	}
-
-	response := map[string]interface{}{
-		"message": "Token verified successfully",
-		"user": map[string]interface{}{
-			"id":         claims.Id,
-			"email":      claims.Email,
-			"first_name": claims.FirstName,
-			"last_name":  claims.LastName,
-		},
-	}
-
 	return c.JSON(http.StatusOK, response)
+
 }
 
 func (h *Handler) GetByEmail(c echo.Context) error {
@@ -173,13 +149,13 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 
 	customer, err := h.service.GetByEmail(c.Request().Context(), email)
 	if err != nil {
-
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
 		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
 	}
+
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
 }
@@ -241,7 +217,7 @@ func (h *Handler) Create(c echo.Context) error {
 	if err != nil {
 		if validationErrs, ok := err.(validator.ValidationErrors); ok {
 			var details []pkg.ValidationErrorDetail
-			fmt.Println("valide içi customer")
+			fmt.Println("Customer validation in progress")
 
 			for _, e := range validationErrs {
 				details = append(details, pkg.ValidationErrorDetail{
