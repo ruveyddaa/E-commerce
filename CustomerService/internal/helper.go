@@ -83,3 +83,10 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	}
 	return customer
 }
+
+func ToVerifiedUserFromResponse(c *types.CustomerResponseModel) types.VerifiedUser {
+	return types.VerifiedUser{
+		ID:    c.ID,
+		Email: c.Email,
+	}
+}
