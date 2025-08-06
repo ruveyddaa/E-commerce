@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"tesodev-korpes/CustomerService/authentication"
 	"tesodev-korpes/CustomerService/internal/types"
+	"tesodev-korpes/pkg/auth"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -44,8 +44,9 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 
 	return ToCustomerResponse(customer), nil
 }
+
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
-	hashedPwd, err := authentication.HashPassword([]byte(req.Password))
+	hashedPwd, err := auth.HashPassword(req.Password)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
 	}
