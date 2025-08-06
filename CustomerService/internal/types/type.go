@@ -5,7 +5,7 @@ import (
 )
 
 type CreateCustomerRequestModel struct {
-	FirstName string    `bson:"first_name" json:"FirstName" validate:"required,min=2,max=50"`
+	FirstName string    `bson:"first_name" json:"first_name" validate:"required,min=2,max=50"`
 	LastName  string    `bson:"last_name" json:"last_name" validate:"required,min=2,max=50"`
 	Email     string    `bson:"email" json:"email" validate:"required,email"` // <-- DÜZELTİLDİ
 	Phone     []Phone   `bson:"phone" json:"phone" validate:"required,dive"`
@@ -44,7 +44,17 @@ type LoginRequestModel struct {
 	Password string `bson:"password" json:"password" validate:"required"`
 }
 type LoginResponse struct {
-	//Token   string                 `json:"token"`
+	Token   string                 `json:"token"`
 	User    *CustomerResponseModel `json:"user"`
 	Message string                 `json:"message"`
+}
+
+type VerifiedUser struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+}
+
+type VerifyTokenResponse struct {
+	Message string       `json:"message"`
+	User    VerifiedUser `json:"user"`
 }
