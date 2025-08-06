@@ -55,6 +55,7 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
+	customer.Role = "non-premium" // role atması yapılıyor
 
 	id, err := s.repo.Create(ctx, customer)
 	if err != nil {

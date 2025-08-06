@@ -36,13 +36,14 @@ func NewHandler(e *echo.Echo, service *Service) {
 		service:  service,
 		validate: validate,
 	}
+	allowedRole_premium := []string{"premium", "non-premium"}
 
-	g := e.Group("/customer", middleware.AuthMiddleware)
+	g := e.Group("/customer", middleware.AuthMiddleware) // midleware aout ve autnticate her endpoint için kontrol edilmeli bence araştır
 	g.GET("/:id", handler.GetByID)
 	g.GET("/email/:email", handler.GetByEmail)
 	g.PUT("/:id", handler.Update)
 	g.DELETE("/:id", handler.Delete)
-	g.GET("/list", handler.GetListCustomer)
+	g.GET("/list", handler.GetListCustomer, middleware.AuthorizationMiddleware(allowedRole_premium))
 
 	e.POST("/customer", handler.Create)
 
