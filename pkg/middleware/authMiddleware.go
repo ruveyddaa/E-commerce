@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"fmt"
-	"net/http"
 	"strings"
 	"tesodev-korpes/pkg/auth"
 	"tesodev-korpes/pkg/errorPackage"
@@ -26,16 +24,7 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return errorPackage.UnauthorizedInvalidToken()
 		}
 
-		customer, err := fetchCustomerByID("http://localhost:8001", claims.ID)
-		if err != nil {
-			fmt.Println("ERR", err)
-			fmt.Println(customer)
-			return echo.NewHTTPError(http.StatusUnauthorized, "Müşteri bilgisi alınamadı")
-		}
-
-		fmt.Println(customer)
 		c.Set("userID", claims.ID)
-		c.Set("userRole", customer.Role)
 
 		return next(c)
 	}
