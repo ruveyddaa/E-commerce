@@ -30,6 +30,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*types.Customer, e
 	}
 	return &customer, nil
 }
+
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*types.Customer, error) {
 	var customer types.Customer
 

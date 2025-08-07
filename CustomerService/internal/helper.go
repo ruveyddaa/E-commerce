@@ -25,6 +25,7 @@ func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 		IsActive:  customer.IsActive,
 		CreatedAt: customer.CreatedAt,
 		UpdatedAt: customer.UpdatedAt,
+		Role:      customer.Role,
 	}
 }
 func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Customer {
