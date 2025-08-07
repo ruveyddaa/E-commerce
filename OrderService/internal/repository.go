@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
 	"time"
 
@@ -47,7 +48,7 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*types.Order, erro
 	return &order, nil
 }
 
-func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status types.OrderStatus) error {
+func (r *Repository) UpdateStatusByID(ctx context.Context, id string, status string) error {
 	filter := bson.M{"_id": id}
 	update := bson.M{
 		"$set": bson.M{
@@ -74,7 +75,7 @@ func (r *Repository) Cancel(id string) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"status":     types.OrderCanceled,
+			"status":     config.OrderStatus.Canceled, //types.OrderCanceled
 			"updated_at": time.Now(),
 		},
 	}
