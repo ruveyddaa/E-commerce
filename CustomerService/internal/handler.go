@@ -3,7 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"tesodev-korpes/pkg/auth"
+
 	"tesodev-korpes/pkg/errorPackage"
 	"tesodev-korpes/pkg/middleware"
 
@@ -49,7 +49,6 @@ func NewHandler(e *echo.Echo, service *Service) {
 	e.POST("/login", handler.Login)
 
 }
-
 func (h *Handler) Login(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 
@@ -71,36 +70,12 @@ func (h *Handler) Login(c echo.Context) error {
 		}
 	}
 
-	customer, err := h.service.GetByEmail(c.Request().Context(), req.Email)
+	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
-		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
+		return err // Service katmanından gelen error'ü direkt dönüyoruz
 	}
 
-	valid, err := auth.VerifyPassword(req.Password, customer.Password)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, "An error occurred while verifying the password")
-	}
-	if !valid {
-		return errorPackage.UnauthorizedInvalidLogin()
-	}
-
-	token, err := auth.GenerateJWT(customer.Id)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, "Failed to generate token")
-	}
-
-	response := types.LoginResponse{
-		Token:   token,
-		User:    ToCustomerResponse(customer),
-		Message: "Login successful",
-	}
-
+	response := ToLoginResponse(token, customer)
 	return c.JSON(http.StatusOK, response)
 }
 
