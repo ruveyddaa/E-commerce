@@ -76,7 +76,7 @@ var ErrorTypeCode = map[string]ErrorDetails{
 	"422101": {
 		TypeCode:   "422101",
 		StatusCode: 422,
-		Message:    "Customer data validation failed.", 
+		Message:    "ivalid data form", //  bunlar değiştirilecek coğaltılıcak
 	},
 
 	// ----- 500 Internal Server Error -----

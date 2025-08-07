@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"tesodev-korpes/OrderService/config"
-	"tesodev-korpes/pkg/errorPackage"
 	"time"
 
 	"github.com/google/uuid"
@@ -88,8 +87,8 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != config.OrderStatus.Ordered {
-		return errorPackage.InvalidOrderStateWithStatus("ship", order.Status)
-	}
+		return err // errorPackage.InvalidOrderStateWithStatus("ship", order.Status)
+	} // buraya tekrar bakılıcak
 
 	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
 	if err != nil {
@@ -109,8 +108,8 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != config.OrderStatus.Shipped {
-		return errorPackage.InvalidOrderStateWithStatus("deliver", string(order.Status))
-	}
+		return err //  errorPackage.InvalidOrderStateWithStatus("deliver", string(order.Status))
+	} // buraya tekarra bakuılıcak
 
 	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
 	if err != nil {
@@ -131,7 +130,7 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 
 	switch order.Status {
 	case config.OrderStatus.Ordered, config.OrderStatus.Delivered, config.OrderStatus.Canceled:
-		return errorPackage.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
+		return err //errorPackage.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
 
 	}
 
@@ -153,7 +152,7 @@ func (s *Service) DeleteOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != config.OrderStatus.Delivered && order.Status != config.OrderStatus.Canceled {
-		return errorPackage.InvalidOrderStateWithStatus("DELETE", string(order.Status))
+		return err // errorPackage.InvalidOrderStateWithStatus("DELETE", string(order.Status))
 	}
 
 	err = s.repo.SoftDeleteByID(ctx, id)

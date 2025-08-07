@@ -49,8 +49,8 @@ func NewNotFound(typeCode string) *AppError {
 	return newAppError(typeCode, nil)
 }
 
-func NewBadRequest(typeCode string, err error) *AppError {
-	return newAppError(typeCode, err)
+func NewBadRequest(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
 }
 
 func NewUnauthorized(typeCode string) *AppError {
@@ -73,3 +73,8 @@ func NewInternal(typeCode string, err error) *AppError {
 	log.Errorf("Internal error occurred with code %s: %v", typeCode, err)
 	return newAppError(typeCode, err)
 }
+
+func NewValidation(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
+}
+
