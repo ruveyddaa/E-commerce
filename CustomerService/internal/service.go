@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"tesodev-korpes/CustomerService/internal/types"
+	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/auth"
+	"tesodev-korpes/pkg/errorPackage"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,6 +22,33 @@ func NewService(repo *Repository) *Service {
 	return &Service{
 		repo: repo,
 	}
+}
+func (s *Service) Login(ctx context.Context, email, password, correlationID string) (string, *types.Customer, error) {
+	customer, err := s.repo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return "", nil, errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
+		}
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return "", nil, errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
+	}
+
+	valid, err := auth.VerifyPassword(password, customer.Password)
+	if err != nil {
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return "", nil, errorPackage.Internal(err, "An error occurred while verifying the password")
+	}
+	if !valid {
+		return "", nil, errorPackage.UnauthorizedInvalidLogin()
+	}
+
+	token, err := auth.GenerateJWT(customer.Id)
+	if err != nil {
+		pkg.LogErrorWithCorrelation(err, correlationID)
+		return "", nil, errorPackage.Internal(err, "Failed to generate token")
+	}
+
+	return token, customer, nil
 }
 func (s *Service) GetByEmail(ctx context.Context, email string) (*types.Customer, error) {
 	customer, err := s.repo.GetByEmail(ctx, email)
