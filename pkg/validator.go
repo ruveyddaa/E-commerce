@@ -19,7 +19,6 @@ type AppValidationError struct {
 func ValidationFailed(details []ValidationErrorDetail, message string) *AppValidationError {
 	baseErr := &errorPackage.AppError{
 		HTTPStatus: http.StatusUnprocessableEntity, // 422, for validation errors
-		Code:       errorPackage.CodeValidation,
 		Message:    message,
 	}
 
