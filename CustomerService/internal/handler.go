@@ -72,7 +72,7 @@ func (h *Handler) Login(c echo.Context) error {
 
 	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
 	if err != nil {
-		return err // Service katmanından gelen error'ü direkt dönüyoruz
+		return err
 	}
 
 	response := ToLoginResponse(token, customer)
