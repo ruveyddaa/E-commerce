@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
 	"time"
 
@@ -29,7 +30,7 @@ func FromCreateOrderRequest(req *types.CreateOrderRequestModel) *types.Order {
 		ShippingAddress: req.ShippingAddress,
 		BillingAddress:  req.BillingAddress,
 		TotalPrice:      calculateTotalPrice(items),
-		Status:          types.OrderOrdered,
+		Status:          config.OrderStatus.Ordered,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}

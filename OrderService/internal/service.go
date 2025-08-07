@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/pkg/errorPackage"
 	"time"
 
@@ -46,7 +47,7 @@ func (s *Service) Create(ctx context.Context, order *types.Order) (string, error
 	order.Id = uuid.NewString()
 	order.CreatedAt = time.Now()
 	order.UpdatedAt = time.Now()
-	order.Status = types.OrderOrdered
+	order.Status = config.OrderStatus.Ordered
 	order.TotalPrice = calculateTotalPrice(order.Items)
 
 	id, err := s.repo.Create(ctx, order)
@@ -86,11 +87,11 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 		return err
 	}
 
-	if order.Status != types.OrderOrdered {
-		return errorPackage.InvalidOrderStateWithStatus("ship", string(order.Status))
+	if order.Status != config.OrderStatus.Ordered {
+		return errorPackage.InvalidOrderStateWithStatus("ship", order.Status)
 	}
 
-	err = s.repo.UpdateStatusByID(ctx, id, types.OrderShipped)
+	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
 	if err != nil {
 		return err
 	}
@@ -107,11 +108,11 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 		return err
 	}
 
-	if order.Status != types.OrderShipped {
+	if order.Status != config.OrderStatus.Shipped {
 		return errorPackage.InvalidOrderStateWithStatus("deliver", string(order.Status))
 	}
 
-	err = s.repo.UpdateStatusByID(ctx, id, types.OrderDelivered)
+	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
 	if err != nil {
 		return err
 	}
@@ -129,12 +130,12 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	}
 
 	switch order.Status {
-	case types.OrderShipped, types.OrderDelivered, types.OrderCanceled:
+	case config.OrderStatus.Ordered, config.OrderStatus.Delivered, config.OrderStatus.Canceled:
 		return errorPackage.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
 
 	}
 
-	err = s.repo.UpdateStatusByID(ctx, id, types.OrderCanceled)
+	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Canceled)
 	if err != nil {
 		return err
 	}
@@ -151,7 +152,7 @@ func (s *Service) DeleteOrder(ctx context.Context, id string) error {
 		return err
 	}
 
-	if order.Status != types.OrderDelivered && order.Status != types.OrderCanceled {
+	if order.Status != config.OrderStatus.Delivered && order.Status != config.OrderStatus.Canceled {
 		return errorPackage.InvalidOrderStateWithStatus("DELETE", string(order.Status))
 	}
 
