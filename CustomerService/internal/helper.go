@@ -97,3 +97,10 @@ func ToVerifyTokenResponse(user *types.CustomerResponseModel) types.VerifyTokenR
 		User:    ToVerifiedUserFromResponse(user),
 	}
 }
+func ToLoginResponse(token string, customer *types.Customer) types.LoginResponse {
+	return types.LoginResponse{
+		Token:   token,
+		User:    ToCustomerResponse(customer),
+		Message: "Login successful",
+	}
+}
