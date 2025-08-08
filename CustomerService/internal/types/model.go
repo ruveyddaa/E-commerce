@@ -15,7 +15,7 @@ type Customer struct {
 	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
 	IsActive  bool      `bson:"is_active" json:"is_active"`
-	Role      string    `bson:"role" json:"role"` // role eklendi
+	Role      string    `bson:"role" json:"role"`
 	Token     string    `bson:"token" json:"token"`
 }
 
