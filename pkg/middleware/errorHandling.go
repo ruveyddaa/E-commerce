@@ -49,18 +49,7 @@ func toAppError(err error) *errorPackage.AppError {
 		return appErr
 	}
 
-	//var httpErr *echo.HTTPError
-	// if errors.As(err, &httpErr) {
-	// 	switch httpErr.Code {
-	// 	case http.StatusBadRequest:
-	// 		return pkg.BadRequest(fmt.Sprintf("%v", httpErr.Message))
-	// 	case http.StatusInternalServerError:
-	// 		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceServiceCode500301])
-	// 	default:
-	// 		return pkg.Wrap(httpErr, httpErr.Code, pkg.CodeInternalFrameworkError, pkg.InternalServerErrorMessages[pkg.ResourceFrameworkCode500401])
-	// 	}
-	// }
-	return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceServiceCode500301])
+	return errorPackage.NewInternal("500001", err)
 }
 
 func buildAPIResponse(err *errorPackage.AppError, c echo.Context) APIErrorResponse {

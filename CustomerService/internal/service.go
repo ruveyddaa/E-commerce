@@ -27,25 +27,25 @@ func (s *Service) Login(ctx context.Context, email, password, correlationID stri
 	customer, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return "", nil, errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
+			return "", nil, errorPackage.NewNotFound("404101")
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceCustomerCode500101])
+		return "", nil, errorPackage.NewInternal("500101", err)
 	}
 
 	valid, err := auth.VerifyPassword(password, customer.Password)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, errorPackage.Internal(err, "An error occurred while verifying the password")
+		return "", nil, errorPackage.NewInternal("500101", err)
 	}
 	if !valid {
-		return "", nil, errorPackage.UnauthorizedInvalidLogin()
+		return "", nil, errorPackage.NewUnauthorized("404201")
 	}
 
 	token, err := auth.GenerateJWT(customer.Id)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, errorPackage.Internal(err, "Failed to generate token")
+		return "", nil, errorPackage.NewInternal("500101", err)
 	}
 
 	return token, customer, nil
@@ -56,7 +56,7 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*types.Customer
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, err // yukarıda 404 olarak dönecek
 		}
-		return nil, fmt.Errorf("failed to get customer by email: %w", err)
+		return nil, err
 	}
 
 	return customer, nil
@@ -115,11 +115,11 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 
 	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("customer not found with id %s", id)
+		return err
 	}
 
 	if err := s.repo.Delete(ctx, id); err != nil {
-		return fmt.Errorf("failed to delete customer with id %s", id)
+		return err
 	}
 	return nil
 }
@@ -137,7 +137,7 @@ func (s *Service) Get(ctx context.Context, params types.Pagination) ([]types.Cus
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, errors.New("customer not found")
 		}
-		return nil, fmt.Errorf("failed to get customers: %w", err)
+		return nil, err
 	}
 
 	var responses []types.CustomerResponseModel

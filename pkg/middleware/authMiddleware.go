@@ -14,14 +14,14 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
-			return errorPackage.UnauthorizedInvalidToken()
+			return errorPackage.NewUnauthorized("401002")
 		}
 
 		tokenStr := strings.TrimPrefix(authHeader, bearerPrefix)
 
 		claims, err := auth.VerifyJWT(tokenStr)
 		if err != nil {
-			return errorPackage.UnauthorizedInvalidToken()
+			return errorPackage.NewUnauthorized("401001")
 		}
 
 		c.Set("userID", claims.ID)

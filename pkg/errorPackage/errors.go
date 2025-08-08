@@ -2,8 +2,8 @@ package errorPackage
 
 import (
 	"fmt"
+
 	"github.com/labstack/gommon/log"
-	"net/http"
 )
 
 type AppError struct {
@@ -24,57 +24,57 @@ func (e *AppError) Unwrap() error {
 	return e.Err
 }
 
-func New(status int, code, message string) *AppError {
-	return &AppError{
-		HTTPStatus: status,
-		Code:       code,
-		Message:    message,
+func newAppError(typeCode string, err error, args ...interface{}) *AppError {
+	details, ok := ErrorTypeCode[typeCode]
+	if !ok {
+		log.Errorf("FATAL: Undefined error code requested: %s", typeCode)
+		details = ErrorTypeCode["500001"] // Tanımsız kod istenirse genel bir iç hata dön
+		typeCode = "500001"
 	}
-}
 
-func Wrap(err error, status int, code, message string) *AppError {
+	msg := details.Message
+	if len(args) > 0 {
+		msg = fmt.Sprintf(msg, args...)
+	}
+
 	return &AppError{
-		HTTPStatus: status,
-		Code:       code,
-		Message:    message,
+		HTTPStatus: details.StatusCode,
+		Code:       typeCode,
+		Message:    msg,
 		Err:        err,
 	}
 }
 
-func NotFound(message string) *AppError {
-	return New(http.StatusNotFound, CodeNotFound, message)
+func NewNotFound(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
 }
 
-func BadRequest(message string) *AppError {
-	if message == "" {
-		message = "Invalid or missing parameter."
-	}
-	return New(http.StatusBadRequest, CodeInvalidInput, message)
+func NewBadRequest(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
 }
 
-func Unauthorized() *AppError {
-	return New(http.StatusUnauthorized, CodeUnauthorized, "You are not authorized to perform this action.")
+func NewUnauthorized(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
 }
 
-func Forbidden() *AppError {
-	return New(http.StatusForbidden, CodeForbidden, "You do not have permission to access this resource.")
+func NewForbidden(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
 }
 
-func Internal(err error, message string) *AppError {
-	log.Error("Internal error:", err)
-	return Wrap(err, http.StatusInternalServerError, CodeInternalError, message)
+func NewConflict(typeCode string, args ...interface{}) *AppError {
+	return newAppError(typeCode, nil, args...)
 }
 
-func InvalidOrderStateWithStatus(action, currentStatus string) *AppError {
-	message := fmt.Sprintf("Cannot %s order while it is in '%s' status", action, currentStatus)
-
-	return New(http.StatusConflict, CodeOrderStateConflict, message)
+func NewUnprocessableEntity(typeCode string, err error) *AppError {
+	return newAppError(typeCode, err)
 }
 
-func UnauthorizedInvalidLogin() *AppError {
-	return New(http.StatusUnauthorized, CodeUnauthorized, "Invalid email or password")
+func NewInternal(typeCode string, err error) *AppError {
+	log.Errorf("Internal error occurred with code %s: %v", typeCode, err)
+	return newAppError(typeCode, err)
 }
 
-func UnauthorizedInvalidToken() *AppError {
-	return New(http.StatusUnauthorized, CodeUnauthorized, "Invalid or missing authorization token")
+func NewValidation(typeCode string) *AppError {
+	return newAppError(typeCode, nil)
 }
+
