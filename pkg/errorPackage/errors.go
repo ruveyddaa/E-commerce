@@ -67,6 +67,7 @@ func Internal(err error, message string) *AppError {
 
 func InvalidOrderStateWithStatus(action, currentStatus string) *AppError {
 	message := fmt.Sprintf("Cannot %s order while it is in '%s' status", action, currentStatus)
+
 	return New(http.StatusConflict, CodeOrderStateConflict, message)
 }
 

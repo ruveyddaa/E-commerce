@@ -9,7 +9,7 @@ type Order struct {
 	ShippingAddress Address     `bson:"shipping_address" json:"shipping_address"`
 	BillingAddress  Address     `bson:"billing_address" json:"billing_address"`
 	TotalPrice      float64     `bson:"total_price" json:"total_price"`
-	Status          OrderStatus `bson:"status" json:"status"`
+	Status          string      `bson:"status" json:"status"`
 	CreatedAt       time.Time   `bson:"created_at" json:"created_at"`
 	UpdatedAt       time.Time   `bson:"updated_at" json:"updated_at"`
 	IsDelete        bool        `bson:"is_delete" json:"is_delete"`

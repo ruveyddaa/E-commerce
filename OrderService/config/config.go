@@ -8,6 +8,18 @@ type OrderConfig struct {
 	}
 }
 
+var OrderStatus = struct {
+	Ordered   string
+	Shipped   string
+	Delivered string
+	Canceled  string
+}{
+	Ordered:   "ORDERED",
+	Shipped:   "SHIPPED",
+	Delivered: "DELIVERED",
+	Canceled:  "CANCELED",
+}
+
 var cfgs = map[string]OrderConfig{
 	"prod": {
 		Port: ":8002",
