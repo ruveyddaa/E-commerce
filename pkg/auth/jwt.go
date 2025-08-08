@@ -11,7 +11,8 @@ import (
 var jwtSecret = []byte("JWT_SECRET")
 
 type Claims struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
+	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
 
