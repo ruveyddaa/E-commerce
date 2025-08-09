@@ -3,20 +3,19 @@ package auth
 import (
 	"errors"
 	"fmt"
+	"tesodev-korpes/shared/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("JWT_SECRET")
-
 type Claims struct {
-	ID   string `json:"id"`
-	Role string `json:"role"`
+	ID string `json:"id"`
 	jwt.RegisteredClaims
 }
 
 func GenerateJWT(Id string) (string, error) {
+	jwtSecret := []byte(config.GetAuthConfig().JWTSecret)
 	claims := &Claims{
 		ID: Id,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -33,6 +32,7 @@ func GenerateJWT(Id string) (string, error) {
 }
 
 func VerifyJWT(tokenString string) (*Claims, error) {
+	jwtSecret := []byte(config.GetAuthConfig().JWTSecret)
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
