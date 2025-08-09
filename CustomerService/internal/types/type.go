@@ -5,46 +5,47 @@ import (
 )
 
 type CreateCustomerRequestModel struct {
-	FirstName string    `bson:"first_name" json:"first_name" validate:"required,min=2,max=50"`
-	LastName  string    `bson:"last_name" json:"last_name" validate:"required,min=2,max=50"`
-	Email     string    `bson:"email" json:"email" validate:"required,email"`
-	Phone     []Phone   `bson:"phone" json:"phone" validate:"required,dive"`
-	Address   []Address `bson:"address" json:"address" validate:"required,dive"`
-	Password  string    `bson:"password" json:"password" validate:"required"`
+	FirstName string    `json:"first_name" validate:"required,min=2,max=50"`
+	LastName  string    `json:"last_name" validate:"required,min=2,max=50"`
+	Email     string    `json:"email" validate:"required,email"`
+	Phone     []Phone   `json:"phone" validate:"required,dive"`
+	Address   []Address `json:"address" validate:"required,dive"`
+	Password  string    `json:"password" validate:"required"`
 }
 
 type UpdateCustomerRequestModel struct {
-	FirstName string    `bson:"first_name,omitempty" json:"first_name,omitempty" validate:"omitempty,min=2,max=50"`
-	LastName  string    `bson:"last_name,omitempty" json:"last_name,omitempty" validate:"omitempty,min=2,max=50"`
-	Email     string    `bson:"email" json:"email" validate:"required,email"`
-	Phone     []Phone   `bson:"phone,omitempty" json:"phone,omitempty" validate:"omitempty,dive"`
-	Address   []Address `bson:"address,omitempty" json:"address,omitempty" validate:"omitempty,dive"`
-	Password  string    `bson:"password,omitempty" json:"password,omitempty" validate:"omitempty"`
-	IsActive  bool      `bson:"is_active,omitempty" json:"is_active,omitempty"`
+	FirstName string    `json:"first_name,omitempty" validate:"omitempty,min=2,max=50"`
+	LastName  string    `json:"last_name,omitempty" validate:"omitempty,min=2,max=50"`
+	Email     string    `json:"email" validate:"required,email"`
+	Phone     []Phone   `json:"phone,omitempty" validate:"omitempty,dive"`
+	Address   []Address `json:"address,omitempty" validate:"omitempty,dive"`
+	Password  string    `json:"password,omitempty" validate:"omitempty"`
+	IsActive  bool      `json:"is_active,omitempty"`
 }
 
 type CustomerResponseModel struct {
-	ID        string    `bson:"_id" json:"id"`
-	FirstName string    `bson:"first_name" json:"first_name"`
-	LastName  string    `bson:"last_name" json:"last_name"`
-	Email     string    `bson:"email" json:"email"`
-	Phone     []Phone   `bson:"phone" json:"phone"`
-	Address   []Address `bson:"address" json:"address"`
-	IsActive  bool      `bson:"is_active" json:"is_active"`
-	CreatedAt time.Time `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
-	Role      string    `bson:"role" json:"role"` // role eklendi
-
+	ID        string    `json:"id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Phone     []Phone   `json:"phone"`
+	Address   []Address `json:"address"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Role      string    `json:"role"`
 }
 
 type Pagination struct {
 	Page  int
 	Limit int
 }
+
 type LoginRequestModel struct {
-	Email    string `bson:"email" json:"email" validate:"required,email"` // <-- DÜZELTİLDİ
-	Password string `bson:"password" json:"password" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
+
 type LoginResponse struct {
 	Token   string                 `json:"token"`
 	User    *CustomerResponseModel `json:"user"`
