@@ -3,6 +3,7 @@ package internal
 import (
 	"errors"
 	"fmt"
+	"tesodev-korpes/pkg/auth"
 
 	"tesodev-korpes/pkg/errorPackage"
 	"tesodev-korpes/pkg/middleware"
@@ -39,7 +40,9 @@ func NewHandler(e *echo.Echo, service *Service) {
 
 	allowedRole_premium := []string{"premium", "non-premium"}
 
-	g := e.Group("/customer", middleware.AuthMiddleware)
+	e.Use(middleware.Authentication(auth.Skipper))
+
+	g := e.Group("/customer")
 	g.GET("/:id", handler.GetByID)
 	g.GET("/email/:email", handler.GetByEmail, middleware.AuthorizationMiddleware(allowedRole_premium))
 	g.PUT("/:id", handler.Update)
@@ -47,9 +50,8 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.GET("/list", handler.GetListCustomer)
 	g.GET("/verify", handler.VerifyAuthentication)
 
-	e.POST("/customer", handler.Create)
-	e.POST("/login", handler.Login)
-
+	g.POST("/create", handler.Create)
+	g.POST("/login", handler.Login)
 }
 func (h *Handler) Login(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
