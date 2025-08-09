@@ -5,28 +5,28 @@ import (
 )
 
 type Customer struct {
-	Id        string    `bson:"_id,omitempty" json:"id"`
-	Password  string    `bson:"password" json:"password"`
-	FirstName string    `bson:"first_name" json:"first_name"`
-	LastName  string    `bson:"last_name" json:"last_name"`
-	Email     string    `bson:"email" json:"email"`
-	Phone     []Phone   `bson:"phone" json:"phone"`
-	Address   []Address `bson:"address" json:"address"`
-	CreatedAt time.Time `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at" json:"updated_at"`
-	IsActive  bool      `bson:"is_active" json:"is_active"`
-	Role      string    `bson:"role" json:"role"`
-	Token     string    `bson:"token" json:"token"`
+	Id        string    `bson:"_id,omitempty"`
+	Password  string    `bson:"password"`
+	FirstName string    `bson:"first_name"`
+	LastName  string    `bson:"last_name"`
+	Email     string    `bson:"email"`
+	Phone     []Phone   `bson:"phone"`
+	Address   []Address `bson:"address"`
+	CreatedAt time.Time `bson:"created_at"`
+	UpdatedAt time.Time `bson:"updated_at"`
+	IsActive  bool      `bson:"is_active"`
+	Role      string    `bson:"role"`
+	Token     string    `bson:"token"`
 }
 
 type Address struct {
-	Id      string `bson:"address_id,omitempty" json:"address_id"`
-	City    string `bson:"city" json:"city"`
-	State   string `bson:"state" json:"state"`
-	ZipCode string `bson:"zip_code" json:"zip_code"`
+	Id      string `bson:"address_id,omitempty"`
+	City    string `bson:"city"`
+	State   string `bson:"state"`
+	ZipCode string `bson:"zip_code"`
 }
 
 type Phone struct {
-	Id          string `bson:"phone_id,omitempty" json:"phone_id"`
-	PhoneNumber int    `bson:"phone_number" json:"phone_number"`
+	Id          string `bson:"phone_id,omitempty"`
+	PhoneNumber int    `bson:"phone_number"`
 }
