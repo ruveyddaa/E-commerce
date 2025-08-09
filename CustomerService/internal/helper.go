@@ -62,6 +62,7 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 		IsActive:  true,
 	}
 }
+
 func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustomerRequestModel) *types.Customer {
 	if customer == nil || req == nil {
 		return customer
@@ -74,14 +75,24 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	}
 
 	if req.Phone != nil {
+		for i, p := range req.Phone {
+			if p.Id == "" && i < len(customer.Phone) {
+				req.Phone[i].Id = customer.Phone[i].Id
+			}
+		}
 		customer.Phone = req.Phone
 	}
+
 	if req.Address != nil {
+		for i, a := range req.Address {
+			if a.Id == "" && i < len(customer.Address) {
+				req.Address[i].Id = customer.Address[i].Id
+			}
+		}
 		customer.Address = req.Address
 	}
-	if !req.IsActive {
-		customer.IsActive = req.IsActive
-	}
+
+	customer.IsActive = req.IsActive
 	return customer
 }
 
