@@ -81,8 +81,6 @@ func (h *Handler) Login(c echo.Context) error {
 		}
 	}
 
-	// Login, iş mantığı içerdiği için Service katmanı AppError'ı kendi oluşturur.
-	// Bu yüzden Handler sadece hatayı yukarı iletir.
 	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
 	if err != nil {
 		return err
@@ -111,7 +109,6 @@ func (h *Handler) VerifyAuthentication(c echo.Context) error {
 		return customError.NewUnauthorized(customError.MissingAuthToken)
 	}
 
-	// service.GetByID ham (raw) error döndürür, burada yakalayıp yorumluyoruz.
 	user, err := h.service.GetByID(c.Request().Context(), userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
