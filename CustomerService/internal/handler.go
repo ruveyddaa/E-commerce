@@ -43,15 +43,15 @@ func NewHandler(e *echo.Echo, service *Service) {
 	e.Use(middleware.Authentication(auth.Skipper))
 
 	g := e.Group("/customer")
+	g.POST("/create", handler.Create)
+	g.POST("/login", handler.Login)
+
 	g.GET("/:id", handler.GetByID)
 	g.GET("/email/:email", handler.GetByEmail, middleware.AuthorizationMiddleware(allowedRole_premium))
 	g.PUT("/:id", handler.Update)
 	g.DELETE("/:id", handler.Delete)
 	g.GET("/list", handler.GetListCustomer)
 	g.GET("/verify", handler.VerifyAuthentication)
-
-	g.POST("/create", handler.Create)
-	g.POST("/login", handler.Login)
 }
 
 // Login godoc
@@ -72,25 +72,20 @@ func (h *Handler) Login(c echo.Context) error {
 
 	var req types.LoginRequestModel
 	if err := c.Bind(&req); err != nil {
-		return customError.NewBadRequest("400102")
+		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		if validationErrs, ok := err.(validator.ValidationErrors); ok {
-			var details []pkg.ValidationErrorDetail
-			for _, e := range validationErrs {
-				details = append(details, pkg.ValidationErrorDetail{
-					Rule:    e.Tag(),
-					Message: fmt.Sprintf("The '%s' field failed on the '%s'", e.Field(), e.Tag()),
-				})
-			}
-			return customError.NewValidation("422101")
+		if _, ok := err.(validator.ValidationErrors); ok {
+			return customError.NewValidation(customError.InvalidDataFormat)
 		}
 	}
 
+	// Login, iş mantığı içerdiği için Service katmanı AppError'ı kendi oluşturur.
+	// Bu yüzden Handler sadece hatayı yukarı iletir.
 	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
 	if err != nil {
-		return customError.NewUnauthorized("401001")
+		return err
 	}
 
 	response := ToLoginResponse(token, customer)
@@ -113,16 +108,17 @@ func (h *Handler) VerifyAuthentication(c echo.Context) error {
 
 	userID, ok := c.Get("userID").(string)
 	if !ok || userID == "" {
-		return customError.NewUnauthorized("401002")
+		return customError.NewUnauthorized(customError.MissingAuthToken)
 	}
 
+	// service.GetByID ham (raw) error döndürür, burada yakalayıp yorumluyoruz.
 	user, err := h.service.GetByID(c.Request().Context(), userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return customError.NewUnauthorized("401002")
+			return customError.NewUnauthorized(customError.MissingAuthToken)
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return customError.NewInternal("500101", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	response := ToVerifyTokenResponse(user)
@@ -147,16 +143,16 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 	email := c.Param("email")
 
 	if !validatorCustom.IsValidEmail(email) {
-		return customError.NewBadRequest("400102")
+		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
 	customer, err := h.service.GetByEmail(c.Request().Context(), email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return customError.NewNotFound("404101")
+			return customError.NewNotFound(customError.CustomerNotFound)
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return customError.NewInternal("500101", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
@@ -179,18 +175,17 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
-	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return customError.NewBadRequest("400101")
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidCustomerID)
 	}
 
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
-
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return customError.NewNotFound("404101")
+			return customError.NewNotFound(customError.CustomerNotFound)
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return customError.NewInternal("500101", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
@@ -213,29 +208,21 @@ func (h *Handler) Create(c echo.Context) error {
 	fmt.Println("create handler custom")
 
 	if err := c.Bind(&req); err != nil {
-		return customError.NewBadRequest("400102")
+		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
 	err := h.validate.Struct(req)
 	if err != nil {
-		if validationErrs, ok := err.(validator.ValidationErrors); ok {
-			var details []pkg.ValidationErrorDetail
+		if _, ok := err.(validator.ValidationErrors); !ok {
 			fmt.Println("Customer validation in progress")
-
-			for _, e := range validationErrs {
-				details = append(details, pkg.ValidationErrorDetail{
-					Rule:    e.Tag(),
-					Message: fmt.Sprintf("The '%s' field failed on the '%s", e.Field(), e.Tag()),
-				})
-			}
-
-			return customError.NewValidation("422101")
+			return customError.NewValidation(customError.InvalidDataFormat)
 		}
 	}
 
+	// service.Create ham (raw) error döndürür. Tanımadığımız için Internal olarak sarmalıyoruz.
 	createdID, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
-		return customError.NewInternal("500101", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{
@@ -261,17 +248,17 @@ func (h *Handler) Create(c echo.Context) error {
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
 	if !pkg.IsValidUUID(id) {
-		return customError.NewBadRequest("400101")
+		return customError.NewBadRequest(customError.InvalidCustomerID)
 	}
 
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return customError.NewBadRequest("400102")
+		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
 	existing, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return customError.NewInternal("500102", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	existingCustomer := FromCustomerResponse(existing)
@@ -279,7 +266,7 @@ func (h *Handler) Update(c echo.Context) error {
 	updatedCustomer := FromUpdateCustomerRequest(existingCustomer, &req)
 
 	if err := h.service.Update(c.Request().Context(), id, updatedCustomer); err != nil {
-		return customError.NewInternal("500101", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 	response := ToCustomerResponse(updatedCustomer)
 	return c.JSON(http.StatusOK, response)
@@ -300,12 +287,17 @@ func (h *Handler) Update(c echo.Context) error {
 // @Router /customer/{id} [delete]
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
-	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return customError.NewBadRequest("400101")
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidCustomerID)
 	}
+
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
-		return customError.NewNotFound("404101")
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.CustomerNotFound)
+		}
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
+
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -341,11 +333,12 @@ func (h *Handler) GetListCustomer(c echo.Context) error {
 
 	customers, err := h.service.Get(c.Request().Context(), params)
 	if err != nil {
+		// Listelemede kayıt bulunamaması bir hata değildir, boş liste dönülür.
+		// Ancak yine de mongo.ErrNoDocuments gelirse diye kontrol ediyoruz.
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return customError.NewNotFound("404101")
+			return c.JSON(http.StatusOK, map[string]interface{}{"data": []types.CustomerResponseModel{}})
 		}
-
-		return customError.NewInternal("500101", err)
+		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})

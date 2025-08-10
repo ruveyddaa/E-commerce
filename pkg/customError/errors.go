@@ -8,28 +8,27 @@ import (
 
 type AppError struct {
 	HTTPStatus int    `json:"-"`
-	Code       string `json:"code"`
+	Code       int    `json:"code"`
 	Message    string `json:"message"`
 	Err        error  `json:"-"`
 }
 
 func (e *AppError) Error() string {
 	if e.Err != nil {
-		return fmt.Sprintf("code: %s, message: %s, underlying_error: %v", e.Code, e.Message, e.Err)
+		return fmt.Sprintf("code: %v, message: %v, underlying_error: %v", e.Code, e.Message, e.Err)
 	}
-	return fmt.Sprintf("code: %s, message: %s", e.Code, e.Message)
+	return fmt.Sprintf("code: %v, message: %v", e.Code, e.Message)
 }
 
 func (e *AppError) Unwrap() error {
 	return e.Err
 }
 
-func newAppError(typeCode string, err error, args ...interface{}) *AppError {
-	details, ok := ErrorTypeCode[typeCode]
+func newAppError(key ErrorKey, err error, args ...interface{}) *AppError {
+	details, ok := ErrorDefinitions[key]
 	if !ok {
-		log.Errorf("FATAL: Undefined error code requested: %s", typeCode)
-		details = ErrorTypeCode["500001"] // Tanımsız kod istenirse genel bir iç hata dön
-		typeCode = "500001"
+		log.Errorf("FATAL: Undefined error key requested: %s", key)
+		details = ErrorDefinitions[InternalServerError] 
 	}
 
 	msg := details.Message
@@ -39,41 +38,41 @@ func newAppError(typeCode string, err error, args ...interface{}) *AppError {
 
 	return &AppError{
 		HTTPStatus: details.StatusCode,
-		Code:       typeCode,
+		Code:       details.TypeCode,
 		Message:    msg,
 		Err:        err,
 	}
 }
 
-func NewNotFound(typeCode string) *AppError {
-	return newAppError(typeCode, nil)
+func NewNotFound(key ErrorKey) *AppError {
+	return newAppError(key, nil)
 }
 
-func NewBadRequest(typeCode string) *AppError {
-	return newAppError(typeCode, nil)
+func NewBadRequest(key ErrorKey) *AppError {
+	return newAppError(key, nil)
 }
 
-func NewUnauthorized(typeCode string) *AppError {
-	return newAppError(typeCode, nil)
+func NewUnauthorized(key ErrorKey) *AppError {
+	return newAppError(key, nil)
 }
 
-func NewForbidden(typeCode string) *AppError {
-	return newAppError(typeCode, nil)
+func NewForbidden(key ErrorKey) *AppError {
+	return newAppError(key, nil)
 }
 
-func NewConflict(typeCode string, args ...interface{}) *AppError {
-	return newAppError(typeCode, nil, args...)
+func NewConflict(key ErrorKey, args ...interface{}) *AppError {
+	return newAppError(key, nil, args...)
 }
 
-func NewUnprocessableEntity(typeCode string, err error) *AppError {
-	return newAppError(typeCode, err)
+func NewUnprocessableEntity(key ErrorKey, err error) *AppError {
+	return newAppError(key, err)
 }
 
-func NewInternal(typeCode string, err error) *AppError {
-	log.Errorf("Internal error occurred with code %s: %v", typeCode, err)
-	return newAppError(typeCode, err)
+func NewInternal(key ErrorKey, err error) *AppError {
+	log.Errorf("Internal error occurred with key %s: %v", key, err)
+	return newAppError(key, err)
 }
 
-func NewValidation(typeCode string) *AppError {
-	return newAppError(typeCode, nil)
+func NewValidation(key ErrorKey) *AppError {
+	return newAppError(key, nil)
 }

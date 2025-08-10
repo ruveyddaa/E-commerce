@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"fmt"
 	"tesodev-korpes/CustomerService/internal/types"
 	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/auth"
@@ -27,25 +26,25 @@ func (s *Service) Login(ctx context.Context, email, password, correlationID stri
 	customer, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return "", nil, customError.NewNotFound("404101")
+			return "", nil, customError.NewNotFound(customError.CustomerNotFound)
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, customError.NewInternal("500101", err)
+		return "", nil, customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	valid, err := auth.VerifyPassword(password, customer.Password)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, customError.NewInternal("500101", err)
+		return "", nil, customError.NewInternal(customError.CustomerServiceError, err)
 	}
 	if !valid {
-		return "", nil, customError.NewUnauthorized("404201")
+		return "", nil, customError.NewUnauthorized(customError.InvalidCredentials)
 	}
 
 	token, err := auth.GenerateJWT(customer.Id)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, customError.NewInternal("500101", err)
+		return "", nil, customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	return token, customer, nil
@@ -65,10 +64,7 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*types.Customer
 func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerResponseModel, error) {
 	customer, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("failed to get customer: %w", err)
+		return nil, err
 	}
 
 	return ToCustomerResponse(customer), nil
@@ -77,7 +73,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.CustomerRespon
 func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestModel) (string, error) {
 	hashedPwd, err := auth.HashPassword(req.Password)
 	if err != nil {
-		return "", fmt.Errorf("failed to hash password: %w", err)
+		return "", err
 	}
 	req.Password = string(hashedPwd)
 
@@ -88,7 +84,7 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 
 	id, err := s.repo.Create(ctx, customer)
 	if err != nil {
-		return "", fmt.Errorf("failed to create customer: %w", err)
+		return "", err
 	}
 
 	return id, nil
@@ -97,7 +93,7 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 func (s *Service) Update(ctx context.Context, id string, customer *types.Customer) error {
 	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return fmt.Errorf("customer not found for ID: %s", id)
+		return err
 	}
 	return s.repo.Update(ctx, id, customer)
 }
@@ -124,9 +120,6 @@ func (s *Service) Get(ctx context.Context, params types.Pagination) ([]types.Cus
 	customers, err := s.repo.Get(ctx, findOptions)
 
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, errors.New("customer not found")
-		}
 		return nil, err
 	}
 

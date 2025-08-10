@@ -11,10 +11,10 @@ import (
 
 type APIErrorResponse struct {
 	Error struct {
-		Code    string `json:"code"`
+		Code    int    `json:"code"`
 		Message string `json:"message"`
 	} `json:"error"`
-	CorralationID string `json:"corralation_id"`
+	CorrelationID string `json:"correlationID"`
 	Timestamp     string `json:"timestamp"`
 }
 
@@ -49,7 +49,7 @@ func toAppError(err error) *customError.AppError {
 		return appErr
 	}
 
-	return customError.NewInternal("500001", err)
+	return customError.NewInternal(customError.InternalServerError, err)
 }
 
 func buildAPIResponse(err *customError.AppError, c echo.Context) APIErrorResponse {
@@ -61,7 +61,7 @@ func buildAPIResponse(err *customError.AppError, c echo.Context) APIErrorRespons
 	var resp APIErrorResponse
 	resp.Error.Code = err.Code
 	resp.Error.Message = err.Message
-	resp.CorralationID = correlationID
+	resp.CorrelationID = correlationID
 	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return resp
 }
