@@ -94,23 +94,13 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	return id, nil
 }
 
-func (s *Service) Update(ctx context.Context, id string, req *types.UpdateCustomerRequestModel) (*types.Customer, error) {
-
-	customer, err := s.repo.GetByID(ctx, id)
+func (s *Service) Update(ctx context.Context, id string, customer *types.Customer) error {
+	_, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("customer not found for ID: %s", id)
+		return fmt.Errorf("customer not found for ID: %s", id)
 	}
-
-	updatedCustomer := FromUpdateCustomerRequest(customer, req)
-
-	err = s.repo.Update(ctx, id, updatedCustomer)
-	if err != nil {
-		return nil, errors.New("failed to update customer")
-	}
-
-	return updatedCustomer, nil
+	return s.repo.Update(ctx, id, customer)
 }
-
 func (s *Service) Delete(ctx context.Context, id string) error {
 
 	_, err := s.repo.GetByID(ctx, id)
