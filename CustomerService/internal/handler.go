@@ -260,19 +260,25 @@ func (h *Handler) Create(c echo.Context) error {
 // @Router /customer/{id} [put]
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
-	if isValidID := pkg.IsValidUUID(id); !isValidID {
+	if !pkg.IsValidUUID(id) {
 		return errorPackage.NewBadRequest("400101")
 	}
+
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
 		return errorPackage.NewBadRequest("400102")
 	}
 
-	updatedCustomer, err := h.service.Update(c.Request().Context(), id, &req)
+	existing, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return errorPackage.NewInternal("500101", err)
+		return errorPackage.NewInternal("500102", err)
 	}
 
+	updatedCustomer := FromUpdateCustomerRequest(existing, &req)
+
+	if err := h.service.Update(c.Request().Context(), id, updatedCustomer); err != nil {
+		return errorPackage.NewInternal("500101", err)
+	}
 	response := ToCustomerResponse(updatedCustomer)
 	return c.JSON(http.StatusOK, response)
 }
