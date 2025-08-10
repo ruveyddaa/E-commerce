@@ -1,4 +1,4 @@
-package errorPackage
+package customError
 
 import (
 	"fmt"
@@ -77,4 +77,3 @@ func NewInternal(typeCode string, err error) *AppError {
 func NewValidation(typeCode string) *AppError {
 	return newAppError(typeCode, nil)
 }
-

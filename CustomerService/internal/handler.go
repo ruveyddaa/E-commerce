@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"tesodev-korpes/pkg/auth"
 
-	"tesodev-korpes/pkg/errorPackage"
+	"tesodev-korpes/pkg/customError"
 	"tesodev-korpes/pkg/middleware"
 
 	"net/http"
@@ -72,7 +72,7 @@ func (h *Handler) Login(c echo.Context) error {
 
 	var req types.LoginRequestModel
 	if err := c.Bind(&req); err != nil {
-		return errorPackage.NewBadRequest("400102")
+		return customError.NewBadRequest("400102")
 	}
 
 	if err := h.validate.Struct(req); err != nil {
@@ -84,13 +84,13 @@ func (h *Handler) Login(c echo.Context) error {
 					Message: fmt.Sprintf("The '%s' field failed on the '%s'", e.Field(), e.Tag()),
 				})
 			}
-			return errorPackage.NewValidation("422101")
+			return customError.NewValidation("422101")
 		}
 	}
 
 	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
 	if err != nil {
-		return errorPackage.NewUnauthorized("401001")
+		return customError.NewUnauthorized("401001")
 	}
 
 	response := ToLoginResponse(token, customer)
@@ -113,16 +113,16 @@ func (h *Handler) VerifyAuthentication(c echo.Context) error {
 
 	userID, ok := c.Get("userID").(string)
 	if !ok || userID == "" {
-		return errorPackage.NewUnauthorized("401002")
+		return customError.NewUnauthorized("401002")
 	}
 
 	user, err := h.service.GetByID(c.Request().Context(), userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NewUnauthorized("401002")
+			return customError.NewUnauthorized("401002")
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.NewInternal("500101", err)
+		return customError.NewInternal("500101", err)
 	}
 
 	response := ToVerifyTokenResponse(user)
@@ -147,16 +147,16 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 	email := c.Param("email")
 
 	if !validatorCustom.IsValidEmail(email) {
-		return errorPackage.NewBadRequest("400102")
+		return customError.NewBadRequest("400102")
 	}
 
 	customer, err := h.service.GetByEmail(c.Request().Context(), email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NewNotFound("404101")
+			return customError.NewNotFound("404101")
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.NewInternal("500101", err)
+		return customError.NewInternal("500101", err)
 	}
 
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
@@ -180,17 +180,17 @@ func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
 	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return errorPackage.NewBadRequest("400101")
+		return customError.NewBadRequest("400101")
 	}
 
 	customer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NewNotFound("404101")
+			return customError.NewNotFound("404101")
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.NewInternal("500101", err)
+		return customError.NewInternal("500101", err)
 	}
 	pkg.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
@@ -213,7 +213,7 @@ func (h *Handler) Create(c echo.Context) error {
 	fmt.Println("create handler custom")
 
 	if err := c.Bind(&req); err != nil {
-		return errorPackage.NewBadRequest("400102")
+		return customError.NewBadRequest("400102")
 	}
 
 	err := h.validate.Struct(req)
@@ -229,13 +229,13 @@ func (h *Handler) Create(c echo.Context) error {
 				})
 			}
 
-			return errorPackage.NewValidation("422101")
+			return customError.NewValidation("422101")
 		}
 	}
 
 	createdID, err := h.service.Create(c.Request().Context(), &req)
 	if err != nil {
-		return errorPackage.NewInternal("500101", err)
+		return customError.NewInternal("500101", err)
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{
@@ -261,17 +261,17 @@ func (h *Handler) Create(c echo.Context) error {
 func (h *Handler) Update(c echo.Context) error {
 	id := c.Param("id")
 	if !pkg.IsValidUUID(id) {
-		return errorPackage.NewBadRequest("400101")
+		return customError.NewBadRequest("400101")
 	}
 
 	var req types.UpdateCustomerRequestModel
 	if err := c.Bind(&req); err != nil {
-		return errorPackage.NewBadRequest("400102")
+		return customError.NewBadRequest("400102")
 	}
 
 	existing, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
-		return errorPackage.NewInternal("500102", err)
+		return customError.NewInternal("500102", err)
 	}
 
 	existingCustomer := FromCustomerResponse(existing)
@@ -279,7 +279,7 @@ func (h *Handler) Update(c echo.Context) error {
 	updatedCustomer := FromUpdateCustomerRequest(existingCustomer, &req)
 
 	if err := h.service.Update(c.Request().Context(), id, updatedCustomer); err != nil {
-		return errorPackage.NewInternal("500101", err)
+		return customError.NewInternal("500101", err)
 	}
 	response := ToCustomerResponse(updatedCustomer)
 	return c.JSON(http.StatusOK, response)
@@ -301,10 +301,10 @@ func (h *Handler) Update(c echo.Context) error {
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
 	if isValidID := pkg.IsValidUUID(id); !isValidID {
-		return errorPackage.NewBadRequest("400101")
+		return customError.NewBadRequest("400101")
 	}
 	if err := h.service.Delete(c.Request().Context(), id); err != nil {
-		return errorPackage.NewNotFound("404101")
+		return customError.NewNotFound("404101")
 	}
 	return c.NoContent(http.StatusNoContent)
 }
@@ -342,10 +342,10 @@ func (h *Handler) GetListCustomer(c echo.Context) error {
 	customers, err := h.service.Get(c.Request().Context(), params)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NewNotFound("404101")
+			return customError.NewNotFound("404101")
 		}
 
-		return errorPackage.NewInternal("500101", err)
+		return customError.NewInternal("500101", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": customers})

@@ -3,7 +3,7 @@ package middleware
 import (
 	"errors"
 	"tesodev-korpes/pkg"
-	"tesodev-korpes/pkg/errorPackage"
+	"tesodev-korpes/pkg/customError"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -42,17 +42,17 @@ func ErrorHandler() echo.MiddlewareFunc {
 	}
 }
 
-func toAppError(err error) *errorPackage.AppError {
-	var appErr *errorPackage.AppError
+func toAppError(err error) *customError.AppError {
+	var appErr *customError.AppError
 
 	if errors.As(err, &appErr) {
 		return appErr
 	}
 
-	return errorPackage.NewInternal("500001", err)
+	return customError.NewInternal("500001", err)
 }
 
-func buildAPIResponse(err *errorPackage.AppError, c echo.Context) APIErrorResponse {
+func buildAPIResponse(err *customError.AppError, c echo.Context) APIErrorResponse {
 	correlationID := c.Response().Header().Get(echo.HeaderXCorrelationID)
 	if correlationID == "" {
 		correlationID = "not-available"

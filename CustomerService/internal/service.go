@@ -7,7 +7,7 @@ import (
 	"tesodev-korpes/CustomerService/internal/types"
 	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/auth"
-	"tesodev-korpes/pkg/errorPackage"
+	"tesodev-korpes/pkg/customError"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,25 +27,25 @@ func (s *Service) Login(ctx context.Context, email, password, correlationID stri
 	customer, err := s.repo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return "", nil, errorPackage.NewNotFound("404101")
+			return "", nil, customError.NewNotFound("404101")
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, errorPackage.NewInternal("500101", err)
+		return "", nil, customError.NewInternal("500101", err)
 	}
 
 	valid, err := auth.VerifyPassword(password, customer.Password)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, errorPackage.NewInternal("500101", err)
+		return "", nil, customError.NewInternal("500101", err)
 	}
 	if !valid {
-		return "", nil, errorPackage.NewUnauthorized("404201")
+		return "", nil, customError.NewUnauthorized("404201")
 	}
 
 	token, err := auth.GenerateJWT(customer.Id)
 	if err != nil {
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return "", nil, errorPackage.NewInternal("500101", err)
+		return "", nil, customError.NewInternal("500101", err)
 	}
 
 	return token, customer, nil

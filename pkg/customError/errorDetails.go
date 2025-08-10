@@ -1,4 +1,4 @@
-package errorPackage
+package customError
 
 // ErrorDetails, uygulamanın her bir spesifik hatası için
 // gerekli tüm bilgileri içeren yapıdır.

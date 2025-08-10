@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"tesodev-korpes/pkg/errorPackage"
+	"tesodev-korpes/pkg/customError"
 
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg"
@@ -60,19 +60,19 @@ func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateOrderRequestModel
 
 	if err := c.Bind(&req); err != nil {
-		return errorPackage.NewBadRequest("400102")
+		return customError.NewBadRequest("400102")
 	}
 
 	order := FromCreateOrderRequest(&req)
 
 	createdID, err := h.service.Create(c.Request().Context(), order)
 	if err != nil {
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
 	if err != nil {
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	return c.JSON(http.StatusCreated, createdOrder)
@@ -95,16 +95,16 @@ func (h *Handler) GetByID(c echo.Context) error {
 	id := c.Param("id")
 
 	if !pkg.IsValidUUID(id) {
-		return errorPackage.NewBadRequest("400201")
+		return customError.NewBadRequest("400201")
 	}
 
 	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NewNotFound("404201")
+			return customError.NewNotFound("404201")
 		}
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
@@ -126,7 +126,7 @@ func (h *Handler) ShipOrder(c echo.Context) error {
 
 	err := h.service.ShipOrder(c.Request().Context(), id)
 	if err != nil {
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order shipped successfully"})
@@ -149,12 +149,12 @@ func (h *Handler) ShipOrder(c echo.Context) error {
 func (h *Handler) DeliverOrder(c echo.Context) error {
 	id := c.Param("id")
 	if !pkg.IsValidUUID(id) {
-		return errorPackage.NewBadRequest("404201")
+		return customError.NewBadRequest("404201")
 	}
 
 	err := h.service.DeliverOrder(c.Request().Context(), id)
 	if err != nil {
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
@@ -176,21 +176,21 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
 	if isValid := pkg.IsValidUUID(id); !isValid {
-		return errorPackage.NewBadRequest("400201")
+		return customError.NewBadRequest("400201")
 	}
 
 	err := h.service.CancelOrder(c.Request().Context(), id)
 	if err != nil {
 		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
-			return errorPackage.NewNotFound("404201")
+			return customError.NewNotFound("404201")
 		}
 
-		if errResp, ok := err.(*errorPackage.AppError); ok {
+		if errResp, ok := err.(*customError.AppError); ok {
 			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
 		}
 
 		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. "})
@@ -217,7 +217,7 @@ func (h *Handler) DeleteOrder(c echo.Context) error {
 		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
 			return c.JSON(http.StatusNotFound, echo.Map{"message": "Order not found"})
 		}
-		if errResp, ok := err.(*errorPackage.AppError); ok {
+		if errResp, ok := err.(*customError.AppError); ok {
 			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
 		}
 
@@ -261,9 +261,9 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 	orders, err := h.service.GetAllOrders(c.Request().Context(), params)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NewNotFound("404201")
+			return customError.NewNotFound("404201")
 		}
-		return errorPackage.NewInternal("500201", err)
+		return customError.NewInternal("500201", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})
