@@ -2,12 +2,14 @@ package auth
 
 import (
 	"errors"
-	"fmt"
+	"tesodev-korpes/pkg/customError"
 	"tesodev-korpes/shared/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+var jwtSecret = []byte(config.GetAuthConfig().JWTSecret)
 
 type Claims struct {
 	ID string `json:"id"`
@@ -15,7 +17,6 @@ type Claims struct {
 }
 
 func GenerateJWT(Id string) (string, error) {
-	jwtSecret := []byte(config.GetAuthConfig().JWTSecret)
 	claims := &Claims{
 		ID: Id,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -24,20 +25,15 @@ func GenerateJWT(Id string) (string, error) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
+	return token.SignedString(jwtSecret)
 }
 
 func VerifyJWT(tokenString string) (*Claims, error) {
-	jwtSecret := []byte(config.GetAuthConfig().JWTSecret)
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			return nil, customError.NewUnauthorized(customError.MissingAuthToken)
 		}
 		return jwtSecret, nil
 	})
