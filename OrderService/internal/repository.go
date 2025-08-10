@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"fmt"
 	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
 	"time"
@@ -11,7 +10,6 @@ import (
 	"github.com/google/uuid"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -94,12 +92,8 @@ func (r *Repository) Cancel(id string) error {
 }
 
 func (r *Repository) SoftDeleteByID(ctx context.Context, id string) error {
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return fmt.Errorf("invalid id format: %w", err)
-	}
 
-	filter := bson.M{"_id": objectID}
+	filter := bson.M{"_id": id}
 	update := bson.M{
 		"$set": bson.M{
 			"is_delete":  true,
