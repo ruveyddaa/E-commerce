@@ -274,7 +274,9 @@ func (h *Handler) Update(c echo.Context) error {
 		return errorPackage.NewInternal("500102", err)
 	}
 
-	updatedCustomer := FromUpdateCustomerRequest(existing, &req)
+	existingCustomer := FromCustomerResponse(existing)
+
+	updatedCustomer := FromUpdateCustomerRequest(existingCustomer, &req)
 
 	if err := h.service.Update(c.Request().Context(), id, updatedCustomer); err != nil {
 		return errorPackage.NewInternal("500101", err)
