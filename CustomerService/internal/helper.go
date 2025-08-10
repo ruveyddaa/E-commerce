@@ -96,6 +96,24 @@ func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustom
 	return customer
 }
 
+func FromCustomerResponse(resp *types.CustomerResponseModel) *types.Customer {
+	if resp == nil {
+		return nil
+	}
+	return &types.Customer{
+		Id:        resp.ID,
+		FirstName: resp.FirstName,
+		LastName:  resp.LastName,
+		Email:     resp.Email,
+		Phone:     resp.Phone,
+		Address:   resp.Address,
+		IsActive:  resp.IsActive,
+		CreatedAt: resp.CreatedAt,
+		UpdatedAt: resp.UpdatedAt,
+		Role:      resp.Role,
+	}
+}
+
 func ToVerifiedUserFromResponse(c *types.CustomerResponseModel) types.VerifiedUser {
 	return types.VerifiedUser{
 		ID:    c.ID,
