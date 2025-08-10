@@ -102,11 +102,11 @@ func (h *Handler) GetByID(c echo.Context) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return customError.NewNotFound(customError.OrderNotFound)
 		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
-	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
+	customError.LogInfoWithCorrelation("Order with customer fetched", correlationID)
 	return c.JSON(http.StatusOK, orderWithCustomer)
 }
 
@@ -193,7 +193,7 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 			return customError.NewNotFound(customError.OrderNotFound)
 		}
 
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
@@ -227,7 +227,7 @@ func (h *Handler) DeleteOrder(c echo.Context) error {
 			return customError.NewNotFound(customError.OrderNotFound)
 		}
 
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
