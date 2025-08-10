@@ -28,7 +28,7 @@ func newAppError(key ErrorKey, err error, args ...interface{}) *AppError {
 	details, ok := ErrorDefinitions[key]
 	if !ok {
 		log.Errorf("FATAL: Undefined error key requested: %s", key)
-		details = ErrorDefinitions[InternalServerError] 
+		details = ErrorDefinitions[InternalServerError]
 	}
 
 	msg := details.Message
@@ -75,4 +75,13 @@ func NewInternal(key ErrorKey, err error) *AppError {
 
 func NewValidation(key ErrorKey) *AppError {
 	return newAppError(key, nil)
+}
+
+func LogErrorWithCorrelation(err error, correlationID string) {
+
+	log.Printf("[CorrelationID: %s] %s", correlationID, err.Error())
+
+}
+func LogInfoWithCorrelation(message string, correlationID string) {
+	log.Printf("[CorrelationID: %s] %s", correlationID, message)
 }
