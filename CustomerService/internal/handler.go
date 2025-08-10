@@ -117,7 +117,7 @@ func (h *Handler) VerifyAuthentication(c echo.Context) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return customError.NewUnauthorized(customError.MissingAuthToken)
 		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
@@ -151,11 +151,11 @@ func (h *Handler) GetByEmail(c echo.Context) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return customError.NewNotFound(customError.CustomerNotFound)
 		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
-	pkg.LogInfoWithCorrelation("Customer found", correlationID)
+	customError.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
 }
 
@@ -184,10 +184,10 @@ func (h *Handler) GetByID(c echo.Context) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return customError.NewNotFound(customError.CustomerNotFound)
 		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return customError.NewInternal(customError.CustomerServiceError, err)
 	}
-	pkg.LogInfoWithCorrelation("Customer found", correlationID)
+	customError.LogInfoWithCorrelation("Customer found", correlationID)
 	return c.JSON(http.StatusOK, customer)
 }
 

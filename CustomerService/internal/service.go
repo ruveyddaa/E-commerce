@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"tesodev-korpes/CustomerService/internal/types"
-	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/auth"
 	"tesodev-korpes/pkg/customError"
 	"time"
@@ -28,13 +27,13 @@ func (s *Service) Login(ctx context.Context, email, password, correlationID stri
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return "", nil, customError.NewNotFound(customError.CustomerNotFound)
 		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return "", nil, customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
 	valid, err := auth.VerifyPassword(password, customer.Password)
 	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return "", nil, customError.NewInternal(customError.CustomerServiceError, err)
 	}
 	if !valid {
@@ -43,7 +42,7 @@ func (s *Service) Login(ctx context.Context, email, password, correlationID stri
 
 	token, err := auth.GenerateJWT(customer.Id)
 	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
+		customError.LogErrorWithCorrelation(err, correlationID)
 		return "", nil, customError.NewInternal(customError.CustomerServiceError, err)
 	}
 
