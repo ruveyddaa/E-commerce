@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/customError"
 	"time"
@@ -29,6 +31,23 @@ func ErrorHandler() echo.MiddlewareFunc {
 			var validationErr *pkg.AppValidationError
 			if errors.As(err, &validationErr) {
 				return c.JSON(validationErr.HTTPStatus, validationErr)
+			}
+
+			var httpErr *echo.HTTPError
+			if errors.As(err, &httpErr) {
+
+				fmt.Printf("[HTTP %d] %v\n", httpErr.Code, httpErr.Message)
+
+				switch httpErr.Code {
+				case http.StatusNotFound:
+					return customError.NewNotFound(customError.UnknownFotFound)
+				case http.StatusBadRequest:
+					return customError.NewBadRequest(customError.UnknownBadRequest)
+				case http.StatusInternalServerError:
+					return customError.NewInternal(customError.UnknownServiceError, err)
+				default:
+					return customError.NewInternal(customError.FrameworkError, httpErr)
+				}
 			}
 
 			appErr := toAppError(err)
