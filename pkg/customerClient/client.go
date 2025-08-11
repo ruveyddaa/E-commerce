@@ -1,101 +1,110 @@
+// File: pkg/customerClient/client.go
 package customerClient
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"time"
-
-	"github.com/valyala/fasthttp"
 )
 
 type Client struct {
 	baseURL string
-	client  *fasthttp.Client
-	timeout time.Duration
+	client  *http.Client
 }
 
-// New: baseURL ve timeout ile tek seferde client oluşturulur.
+// New: baseURL ve timeout ile net/http client oluşturur.
 // Örn: New("http://localhost:8001", 5*time.Second)
 func New(baseURL string, timeout time.Duration) *Client {
 	return &Client{
 		baseURL: baseURL,
-		client:  &fasthttp.Client{},
-		timeout: timeout,
+		client:  &http.Client{Timeout: timeout},
 	}
 }
 
 func (c *Client) Get(path string, headers map[string]string, out interface{}) error {
-	return c.doJSON(fasthttp.MethodGet, path, headers, nil, out)
+	return c.doJSON(http.MethodGet, path, headers, nil, out)
 }
 
 func (c *Client) Post(path string, headers map[string]string, body interface{}, out interface{}) error {
-	return c.doJSON(fasthttp.MethodPost, path, headers, body, out)
+	return c.doJSON(http.MethodPost, path, headers, body, out)
 }
 
 func (c *Client) Put(path string, headers map[string]string, body interface{}, out interface{}) error {
-	return c.doJSON(fasthttp.MethodPut, path, headers, body, out)
+	return c.doJSON(http.MethodPut, path, headers, body, out)
 }
 
 func (c *Client) Patch(path string, headers map[string]string, body interface{}, out interface{}) error {
-	return c.doJSON(fasthttp.MethodPatch, path, headers, body, out)
+	return c.doJSON(http.MethodPatch, path, headers, body, out)
 }
 
 func (c *Client) Delete(path string, headers map[string]string) error {
-	return c.doJSON(fasthttp.MethodDelete, path, headers, nil, nil)
+	return c.doJSON(http.MethodDelete, path, headers, nil, nil)
 }
 
 // ---- helpers ----
 
 func (c *Client) doJSON(method, path string, headers map[string]string, body interface{}, out interface{}) error {
-	req := fasthttp.AcquireRequest()
-	res := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseRequest(req)
-	defer fasthttp.ReleaseResponse(res)
-
 	fullURL := c.baseURL + path
-	req.SetRequestURI(fullURL)
-	req.Header.SetMethod(method)
 
-	// Varsayılan JSON içerik tipi – gerekirse headers ile override edilebilir
-	req.Header.SetContentType("application/json")
-
-	// Header’ları ekle
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	// Body varsa JSON’a çevir
+	var r io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
 			return fmt.Errorf("marshal body: %w", err)
 		}
-		req.SetBody(b)
+		r = bytes.NewReader(b)
 	}
 
-	// İstek
-	if err := c.client.DoTimeout(req, res, c.timeout); err != nil {
+	// İstersen burada context’li versiyon kullanabilirsin: http.NewRequestWithContext(ctx, ...)
+	req, err := http.NewRequest(method, fullURL, r)
+	if err != nil {
+		return err
+	}
+
+	// Varsayılan JSON içerik tipi – header’lar override edebilir
+	contentTypeSet := false
+	for k, v := range headers {
+		req.Header.Set(k, v)
+		if http.CanonicalHeaderKey(k) == "Content-Type" {
+			contentTypeSet = true
+		}
+	}
+	if !contentTypeSet {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}
+	defer resp.Body.Close()
 
-	status := res.StatusCode()
+	status := resp.StatusCode
+
+	// Status kontrolü (POST: 200/201; diğerleri: 200/204)
 	switch method {
-	case fasthttp.MethodPost:
-		if status != fasthttp.StatusCreated && status != fasthttp.StatusOK {
-			return fmt.Errorf("%s failed: %d", method, status)
+	case http.MethodPost:
+		if status != http.StatusOK && status != http.StatusCreated {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("%s failed: %d - %s", method, status, string(bodyBytes))
 		}
-	case fasthttp.MethodPut, fasthttp.MethodPatch, fasthttp.MethodDelete, fasthttp.MethodGet:
-		if status != fasthttp.StatusOK && status != fasthttp.StatusNoContent {
-			return fmt.Errorf("%s failed: %d", method, status)
+	default:
+		if status != http.StatusOK && status != http.StatusNoContent {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("%s failed: %d - %s", method, status, string(bodyBytes))
 		}
 	}
 
-	// Body yoksa çık
-	if out == nil || len(res.Body()) == 0 {
+	// 204 No Content veya out == nil ise decode etme
+	if status == http.StatusNoContent || out == nil {
 		return nil
 	}
 
-	if err := json.Unmarshal(res.Body(), out); err != nil {
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(out); err != nil {
 		return fmt.Errorf("decode response: %w", err)
 	}
 	return nil
