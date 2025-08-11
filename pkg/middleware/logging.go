@@ -18,7 +18,7 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		path := req.URL.Path
 		ip := c.RealIP()
 		userAgent := req.UserAgent()
-		correlationID := c.Response().Header().Get("Correlation-ID")
+		correlationID := c.Response().Header().Get("X-Correlation-ID")
 
 		logrus.WithFields(logrus.Fields{
 			"event":         "request",

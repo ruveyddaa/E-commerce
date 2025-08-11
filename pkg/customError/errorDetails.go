@@ -23,6 +23,16 @@ var ErrorDefinitions = map[ErrorKey]ErrorDetails{
 		StatusCode: http.StatusBadRequest,
 		Message:    "The requested invalid customer body json.",
 	},
+	EmptyCustomerID: {
+		TypeCode:   400103,
+		StatusCode: http.StatusBadRequest,
+		Message:    "Do not empty field customerID",
+	},
+	EmptyRole: {
+		TypeCode:   400104,
+		StatusCode: http.StatusBadRequest,
+		Message:    "Do not empty field role",
+	},
 	InvalidOrderID: {
 		TypeCode:   400201,
 		StatusCode: http.StatusBadRequest,
@@ -32,6 +42,11 @@ var ErrorDefinitions = map[ErrorKey]ErrorDetails{
 		TypeCode:   400202,
 		StatusCode: http.StatusBadRequest,
 		Message:    "The requested invalid order body json.",
+	},
+	UnknownBadRequest: {
+		TypeCode:   400301,
+		StatusCode: http.StatusNotFound,
+		Message:    "The requested ... was bad request",
 	},
 
 	// ----- 401 Unauthorized -----
@@ -63,6 +78,11 @@ var ErrorDefinitions = map[ErrorKey]ErrorDetails{
 		TypeCode:   404201,
 		StatusCode: http.StatusNotFound,
 		Message:    "The requested order was not found.",
+	},
+	UnknownFotFound: {
+		TypeCode:   404301,
+		StatusCode: http.StatusNotFound,
+		Message:    "The requested ... was not found.",
 	},
 
 	// ----- 409 Conflict -----
@@ -112,8 +132,11 @@ const (
 	// Bad Request
 	InvalidCustomerID   ErrorKey = "InvalidCustomerID"
 	InvalidCustomerBody ErrorKey = "InvalidCustomerBody"
+	EmptyCustomerID     ErrorKey = "EmptyCustomerID"
+	EmptyRole           ErrorKey = "EmptyROle"
 	InvalidOrderID      ErrorKey = "InvalidOrderID"
 	InvalidOrderBody    ErrorKey = "InvalidOrderBody"
+	UnknownBadRequest   ErrorKey = "UnknownBadRequest"
 
 	// Unauthorized
 	InvalidCredentials ErrorKey = "InvalidCredentials"
@@ -125,6 +148,7 @@ const (
 	// Not Found
 	CustomerNotFound ErrorKey = "CustomerNotFound"
 	OrderNotFound    ErrorKey = "OrderNotFound"
+	UnknownFotFound  ErrorKey = "UnknownFotFound"
 
 	// Conflict
 	OrderStatusConflict ErrorKey = "OrderStatusConflict"

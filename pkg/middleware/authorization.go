@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
+	"tesodev-korpes/pkg/customError"
 
 	"github.com/labstack/echo/v4"
 )
@@ -13,12 +13,12 @@ func AuthorizationMiddleware(allowedRoles []string) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			userID, ok := c.Get("userID").(string)
 			if !ok || userID == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Kullanıcı doğrulanamadı")
+				return customError.NewBadRequest(customError.EmptyCustomerID)
 			}
 			userRole, ok := c.Get("userRole").(string)
 			fmt.Println(userRole)
 			if !ok || userRole == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Role alınımadı")
+				return customError.NewBadRequest(customError.EmptyRole)
 			}
 
 			for _, allowed := range allowedRoles {
@@ -27,7 +27,7 @@ func AuthorizationMiddleware(allowedRoles []string) echo.MiddlewareFunc {
 				}
 			}
 
-			return echo.NewHTTPError(http.StatusForbidden, "Bu işlemi yapmaya yetkiniz yok")
+			return customError.NewForbidden(customError.ForbiddenAccess)
 		}
 	}
 }
