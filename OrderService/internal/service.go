@@ -1,4 +1,3 @@
-// File: service.go
 package internal
 
 import (
@@ -33,12 +32,12 @@ func NewService(repo *Repository, customerServiceURL string) *Service {
 	}
 }
 
-func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
+func (s *Service) Create(ctx context.Context, order *types.Order, token string) (string, error) {
 	if order.CustomerId == "" {
-		return "", errors.New("customerId not found ")
+		return "", errors.New("customerId not found")
 	}
 
-	customer, err := s.fetchCustomerByID(order.CustomerId)
+	customer, err := s.fetchCustomerByID(order.CustomerId, token)
 	if err != nil || customer == nil {
 		return "", fmt.Errorf("customer control unsuccessful")
 	}
@@ -57,7 +56,7 @@ func (s *Service) Create(ctx context.Context, order *types.Order) (string, error
 	return id, nil
 }
 
-func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCustomerResponse, error) {
+func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -66,7 +65,7 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCusto
 		return nil, err
 	}
 
-	customer, err := s.fetchCustomerByID(order.CustomerId)
+	customer, err := s.fetchCustomerByID(order.CustomerId, token)
 	if err != nil {
 		return nil, fmt.Errorf("customer fetch failed: %w", err)
 	}
@@ -87,15 +86,10 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != config.OrderStatus.Ordered {
-		return err // errorPackage.InvalidOrderStateWithStatus("ship", order.Status)
-	} // buraya tekrar bakılıcak
-
-	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
-	if err != nil {
 		return err
 	}
 
-	return nil
+	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
 }
 
 func (s *Service) DeliverOrder(ctx context.Context, id string) error {
@@ -108,15 +102,10 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != config.OrderStatus.Shipped {
-		return err //  errorPackage.InvalidOrderStateWithStatus("deliver", string(order.Status))
-	} // buraya tekarra bakuılıcak
-
-	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
-	if err != nil {
 		return err
 	}
 
-	return nil
+	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
 }
 
 func (s *Service) CancelOrder(ctx context.Context, id string) error {
@@ -130,16 +119,10 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 
 	switch order.Status {
 	case config.OrderStatus.Ordered, config.OrderStatus.Delivered, config.OrderStatus.Canceled:
-		return err //errorPackage.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
-
-	}
-
-	err = s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Canceled)
-	if err != nil {
 		return err
 	}
 
-	return nil
+	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Canceled)
 }
 
 func (s *Service) DeleteOrder(ctx context.Context, id string) error {
@@ -152,15 +135,10 @@ func (s *Service) DeleteOrder(ctx context.Context, id string) error {
 	}
 
 	if order.Status != config.OrderStatus.Delivered && order.Status != config.OrderStatus.Canceled {
-		return err // errorPackage.InvalidOrderStateWithStatus("DELETE", string(order.Status))
+		return err
 	}
 
-	err = s.repo.SoftDeleteByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("failed to soft delete order: %w", err)
-	}
-
-	return nil
+	return s.repo.SoftDeleteByID(ctx, id)
 }
 
 func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination) ([]*types.OrderResponseModel, error) {
@@ -185,10 +163,10 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 	}
 
 	return response, nil
-
 }
 
-func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
+// Authorization header eklenmiş versiyon
+func (s *Service) fetchCustomerByID(customerID string, token string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
 		return nil, errors.New("customerID bos")
 	}
@@ -196,20 +174,20 @@ func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseM
 	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", token)
+	}
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-
 		return nil, nil
 	}
 

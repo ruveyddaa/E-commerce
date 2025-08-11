@@ -57,24 +57,46 @@ func NewHandler(e *echo.Echo, service *Service) {
 // @Router /orders [post]
 func (h *Handler) Create(c echo.Context) error {
 	var req types.CreateOrderRequestModel
-
 	if err := c.Bind(&req); err != nil {
 		return customError.NewBadRequest(customError.InvalidOrderBody)
 	}
 
+	token := c.Request().Header.Get("Authorization") // ← kullanıcının JWT’si
+
 	order := FromCreateOrderRequest(&req)
 
-	createdID, err := h.service.Create(c.Request().Context(), order)
+	createdID, err := h.service.Create(c.Request().Context(), order, token) // ← token eklendi
 	if err != nil {
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
-	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
+	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID, token) // ← token eklendi
 	if err != nil {
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
 	return c.JSON(http.StatusCreated, createdOrder)
+}
+
+func (h *Handler) GetByID(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+	id := c.Param("id")
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	token := c.Request().Header.Get("Authorization")                              // ← token al
+	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id, token) // ← token ver
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+		customError.LogErrorWithCorrelation(err, correlationID)
+		return customError.NewInternal(customError.OrderServiceError, err)
+	}
+
+	customError.LogInfoWithCorrelation("Order with customer fetched", correlationID)
+	return c.JSON(http.StatusOK, orderWithCustomer)
 }
 
 // GetByID godoc
@@ -89,26 +111,6 @@ func (h *Handler) Create(c echo.Context) error {
 // @Failure 404 {object} errorPackage.AppError "Order not found"
 // @Failure 500 {object} errorPackage.AppError "Internal server error"
 // @Router /orders/{id} [get]
-func (h *Handler) GetByID(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string)
-	id := c.Param("id")
-
-	if !pkg.IsValidUUID(id) {
-		return customError.NewBadRequest(customError.InvalidOrderID)
-	}
-
-	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return customError.NewNotFound(customError.OrderNotFound)
-		}
-		customError.LogErrorWithCorrelation(err, correlationID)
-		return customError.NewInternal(customError.OrderServiceError, err)
-	}
-
-	customError.LogInfoWithCorrelation("Order with customer fetched", correlationID)
-	return c.JSON(http.StatusOK, orderWithCustomer)
-}
 
 // ShipOrder godoc
 // @Summary Ship an order
