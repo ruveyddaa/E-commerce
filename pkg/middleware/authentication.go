@@ -20,14 +20,14 @@ func Authentication(skipper SkipperFunc) echo.MiddlewareFunc {
 
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" || !strings.HasPrefix(authHeader, bearerPrefix) {
-				return customError.NewUnauthorized("401002")
+				return customError.NewUnauthorized(customError.MissingAuthToken)
 			}
 
 			tokenStr := strings.TrimPrefix(authHeader, bearerPrefix)
 
 			claims, err := auth.VerifyJWT(tokenStr)
 			if err != nil {
-				return customError.NewUnauthorized("401001")
+				return customError.NewUnauthorized(customError.MissingAuthToken)
 			}
 
 			c.Set("userID", claims.ID)
