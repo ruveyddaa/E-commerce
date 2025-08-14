@@ -67,11 +67,17 @@ func (h *Handler) Create(c echo.Context) error {
 
 	createdID, err := h.service.Create(c.Request().Context(), order, token) // ← token eklendi
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return customError.NewNotFound(customError.CustomerNotFound)
+		}
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
-	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID, token) // ← token eklendi
+	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID, token)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
@@ -180,6 +186,7 @@ func (h *Handler) DeliverOrder(c echo.Context) error {
 			}
 
 		}
+
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
