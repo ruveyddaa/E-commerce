@@ -49,9 +49,9 @@ func getUserRoleFromMongo(mongoClient *mongo.Client, userID string) (string, err
 	col := mongoClient.Database("tesodev").Collection("customer")
 
 	var doc struct {
-		System struct {
-			Role string `bson:"role"`
-		} `bson:"system"`
+		Role struct {
+			SystemRole string `bson:"role"`
+		} `bson:"role"`
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -61,9 +61,8 @@ func getUserRoleFromMongo(mongoClient *mongo.Client, userID string) (string, err
 		return "", err
 	}
 
-	if doc.System.Role == "" {
+	if doc.Role.SystemRole == "" {
 		return "", fmt.Errorf("role not found for user %s", userID)
 	}
-
-	return doc.System.Role, nil
+	return doc.Role.SystemRole, nil
 }
