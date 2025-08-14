@@ -66,7 +66,6 @@ func GetDBConfig(env string) *DbConfig {
 	config.MongoClientURI = os.Getenv("MONGO_URI")
 	return &config
 }
-
 func GetServiceURLs() ServiceUrls {
 	return serviceUrls
 }

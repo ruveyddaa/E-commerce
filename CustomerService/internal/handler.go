@@ -31,7 +31,7 @@ type Handler struct {
 	validate *validator.Validate
 }
 
-func NewHandler(e *echo.Echo, service *Service) {
+func NewHandler(e *echo.Echo, service *Service, mongoClient *mongo.Client) {
 	validate := validator.New()
 	handler := &Handler{
 		service:  service,
@@ -40,7 +40,7 @@ func NewHandler(e *echo.Echo, service *Service) {
 
 	allowedRole_premium := []string{"premium", "non-premium"}
 
-	e.Use(middleware.Authentication(auth.Skipper))
+	e.Use(middleware.Authentication(mongoClient, auth.Skipper))
 
 	g := e.Group("/customer")
 	g.POST("/create", handler.Create)

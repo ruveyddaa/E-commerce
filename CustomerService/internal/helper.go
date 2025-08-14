@@ -16,16 +16,17 @@ func ToCustomerResponse(customer *types.Customer) *types.CustomerResponseModel {
 		return nil
 	}
 	return &types.CustomerResponseModel{
-		ID:        customer.Id,
-		FirstName: customer.FirstName,
-		LastName:  customer.LastName,
-		Email:     customer.Email,
-		Phone:     customer.Phone,
-		Address:   customer.Address,
-		IsActive:  customer.IsActive,
-		CreatedAt: customer.CreatedAt,
-		UpdatedAt: customer.UpdatedAt,
-		Role:      customer.Role,
+		ID:           customer.Id,
+		FirstName:    customer.FirstName,
+		LastName:     customer.LastName,
+		Email:        customer.Email,
+		Phone:        customer.Phone,
+		Address:      customer.Address,
+		IsActive:     customer.IsActive,
+		CreatedAt:    customer.CreatedAt,
+		UpdatedAt:    customer.UpdatedAt,
+		System:       customer.System,
+		Subscription: customer.Subscription,
 	}
 }
 func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Customer {
@@ -52,14 +53,16 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 	}
 
 	return &types.Customer{
-		Id:        uuid.New().String(),
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Email:     req.Email,
-		Phone:     phones,
-		Address:   addresses,
-		Password:  req.Password,
-		IsActive:  true,
+		Id:           uuid.New().String(),
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+		Email:        req.Email,
+		Phone:        phones,
+		Address:      addresses,
+		Password:     req.Password,
+		System:       req.System,
+		Subscription: req.Subscription,
+		IsActive:     true,
 	}
 }
 
@@ -101,16 +104,17 @@ func FromCustomerResponse(resp *types.CustomerResponseModel) *types.Customer {
 		return nil
 	}
 	return &types.Customer{
-		Id:        resp.ID,
-		FirstName: resp.FirstName,
-		LastName:  resp.LastName,
-		Email:     resp.Email,
-		Phone:     resp.Phone,
-		Address:   resp.Address,
-		IsActive:  resp.IsActive,
-		CreatedAt: resp.CreatedAt,
-		UpdatedAt: resp.UpdatedAt,
-		Role:      resp.Role,
+		Id:           resp.ID,
+		FirstName:    resp.FirstName,
+		LastName:     resp.LastName,
+		Email:        resp.Email,
+		Phone:        resp.Phone,
+		Address:      resp.Address,
+		IsActive:     resp.IsActive,
+		CreatedAt:    resp.CreatedAt,
+		UpdatedAt:    resp.UpdatedAt,
+		System:       resp.System,
+		Subscription: resp.Subscription,
 	}
 }
 
