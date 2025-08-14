@@ -124,9 +124,23 @@ func (h *Handler) GetByID(c echo.Context) error {
 // @Router /orders/{id}/ship [put]
 func (h *Handler) ShipOrder(c echo.Context) error {
 	id := c.Param("id")
-
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
 	err := h.service.ShipOrder(c.Request().Context(), id)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
+		}
+
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
@@ -155,9 +169,16 @@ func (h *Handler) DeliverOrder(c echo.Context) error {
 
 	err := h.service.DeliverOrder(c.Request().Context(), id)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
 		var appErr *customError.AppError
 		if errors.As(err, &appErr) {
-			return appErr
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
 		}
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
@@ -186,13 +207,16 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 
 	err := h.service.CancelOrder(c.Request().Context(), id)
 	if err != nil {
-		var appErr *customError.AppError
-		if errors.As(err, &appErr) {
-			return appErr
-		}
-
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
 		}
 
 		customError.LogErrorWithCorrelation(err, correlationID)
@@ -217,16 +241,22 @@ func (h *Handler) CancelOrder(c echo.Context) error {
 func (h *Handler) DeleteOrder(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
 
 	err := h.service.DeleteOrder(c.Request().Context(), id)
 	if err != nil {
-		var appErr *customError.AppError
-		if errors.As(err, &appErr) {
-			return appErr
-		}
-
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
 		}
 
 		customError.LogErrorWithCorrelation(err, correlationID)

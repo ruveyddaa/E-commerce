@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"tesodev-korpes/OrderService/config"
+	"tesodev-korpes/pkg/customError"
 	"time"
 
 	"github.com/google/uuid"
@@ -79,14 +80,11 @@ func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.
 func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
 
 	if order.Status != config.OrderStatus.Ordered {
-		return err
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Ordered)
 	}
 
 	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
@@ -95,14 +93,11 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
 
 	if order.Status != config.OrderStatus.Shipped {
-		return err
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Shipped)
 	}
 
 	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
@@ -111,15 +106,12 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
 
 	switch order.Status {
 	case config.OrderStatus.Ordered, config.OrderStatus.Delivered, config.OrderStatus.Canceled:
-		return err
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Canceled)
 	}
 
 	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Canceled)
@@ -128,14 +120,14 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 func (s *Service) DeleteOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("order not found for ID: %s", id)
-		}
 		return err
 	}
 
-	if order.Status != config.OrderStatus.Delivered && order.Status != config.OrderStatus.Canceled {
-		return err
+	if order.Status != config.OrderStatus.Delivered {
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Delivered)
+	}
+	if order.Status != config.OrderStatus.Canceled {
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Canceled)
 	}
 
 	return s.repo.SoftDeleteByID(ctx, id)
