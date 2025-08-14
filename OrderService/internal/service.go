@@ -39,7 +39,7 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 
 	customer, err := s.fetchCustomerByID(order.CustomerId, token)
 	if err != nil || customer == nil {
-		return "", fmt.Errorf("customer control unsuccessful")
+		return "", err
 	}
 
 	order.Id = uuid.NewString()
@@ -59,15 +59,12 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, err
-		}
 		return nil, err
 	}
 
 	customer, err := s.fetchCustomerByID(order.CustomerId, token)
 	if err != nil {
-		return nil, fmt.Errorf("customer fetch failed: %w", err)
+		return nil, err
 	}
 
 	return &types.OrderWithCustomerResponse{
@@ -95,9 +92,6 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
 
