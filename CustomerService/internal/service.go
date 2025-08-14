@@ -79,10 +79,6 @@ func (s *Service) Create(ctx context.Context, req *types.CreateCustomerRequestMo
 	customer := FromCreateCustomerRequest(req)
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
-	// Set default role if not provided
-	if customer.System.Role == "" {
-		customer.System.Role = "non-premium"
-	}
 
 	id, err := s.repo.Create(ctx, customer)
 	if err != nil {
