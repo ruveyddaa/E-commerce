@@ -1,37 +1,35 @@
+// File: internal/service.go
 package internal
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
-	"tesodev-korpes/OrderService/config"
-	"tesodev-korpes/pkg/customError"
 	"time"
 
-	"github.com/google/uuid"
-
+	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
+	"tesodev-korpes/pkg/client"      // <- fastHTTP wrapper (baseURL + path)
+	"tesodev-korpes/pkg/customError" // <- daha anlamlı hata mesajları için
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Service struct {
-	repo               *Repository
-	httpClient         *http.Client
-	customerServiceURL string
+	repo           *Repository
+	customerClient *client.Client
 }
 
-func NewService(repo *Repository, customerServiceURL string) *Service {
+func NewService(repo *Repository, customerClient *client.Client) *Service {
 	return &Service{
-		repo:               repo,
-		httpClient:         &http.Client{Timeout: 5 * time.Second},
-		customerServiceURL: customerServiceURL,
+		repo:           repo,
+		customerClient: customerClient,
 	}
 }
 
+// Create: order oluşturur; CustomerService'ten müşteriyi doğrular.
+// NOT: token'ı handler'dan alıyoruz ve Authorization header'ı olarak forward ediyoruz.
 func (s *Service) Create(ctx context.Context, order *types.Order, token string) (string, error) {
 	if order.CustomerId == "" {
 		return "", errors.New("customerId not found")
@@ -52,10 +50,10 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 	if err != nil {
 		return "", err
 	}
-
 	return id, nil
 }
 
+// GetByID: order + müşteri bilgisi.
 func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -78,11 +76,9 @@ func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-
 	if order.Status != config.OrderStatus.Ordered {
 		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Ordered)
 	}
-
 	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
 }
 
@@ -91,11 +87,9 @@ func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-
 	if order.Status != config.OrderStatus.Shipped {
 		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Shipped)
 	}
-
 	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
 }
 
@@ -104,12 +98,10 @@ func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-
 	switch order.Status {
 	case config.OrderStatus.Ordered, config.OrderStatus.Delivered, config.OrderStatus.Canceled:
 		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Canceled)
 	}
-
 	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Canceled)
 }
 
@@ -153,37 +145,24 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 	return response, nil
 }
 
-// Authorization header eklenmiş versiyon
-func (s *Service) fetchCustomerByID(customerID string, token string) (*types.CustomerResponseModel, error) {
+// --- private helpers ---
+
+func (s *Service) fetchCustomerByID(customerID, token string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
-		return nil, errors.New("customerID bos")
+		return nil, errors.New("customerID empty")
 	}
 
-	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
+	headers := map[string]string{
+		"Content-Type": "application/json",
 	}
-	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
-		req.Header.Set("Authorization", token)
-	}
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, nil
+		headers["Authorization"] = token // Bearer ... (handler ne veriyorsa aynen iletilir)
 	}
 
 	var customer types.CustomerResponseModel
-	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
+	if err := s.customerClient.Get("/customer/"+customerID, headers, &customer); err != nil {
 		return nil, err
 	}
-
 	return &customer, nil
 }
 
