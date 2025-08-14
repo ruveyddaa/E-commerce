@@ -11,8 +11,8 @@ type CreateCustomerRequestModel struct {
 	Phone        []Phone      `json:"phone" validate:"required,dive"`
 	Address      []Address    `json:"address" validate:"required,dive"`
 	Password     string       `json:"password" validate:"required"`
-	System       System       `json:"system" validate:"required,dive"`
-	Subscription Subscription `json:"subscription" validate:"required,dive"`
+	System       System       `json:"system" validate:"required"`
+	Subscription Subscription `json:"subscription" validate:"required"`
 }
 
 type UpdateCustomerRequestModel struct {
@@ -23,8 +23,8 @@ type UpdateCustomerRequestModel struct {
 	Address      []Address    `json:"address,omitempty" validate:"omitempty,dive"`
 	Password     string       `json:"password,omitempty" validate:"omitempty"`
 	IsActive     bool         `json:"is_active,omitempty"`
-	System       System       `json:"system,omitempty" validate:"omitempty,dive"`
-	Subscription Subscription `json:"subscription,omitempty" validate:"omitempty,dive"`
+	System       System       `json:"system,omitempty" validate:"omitempty"`
+	Subscription Subscription `json:"subscription,omitempty" validate:"omitempty"`
 }
 
 type CustomerResponseModel struct {
