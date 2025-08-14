@@ -38,7 +38,7 @@ func NewHandler(e *echo.Echo, service *Service, mongoClient *mongo.Client) {
 		validate: validate,
 	}
 
-	allowedRole_premium := []string{"premium", "non-premium"}
+	allowedRole_premium := []string{"admin", "manager", "user"}
 
 	e.Use(middleware.Authentication(mongoClient, auth.Skipper))
 
