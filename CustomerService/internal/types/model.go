@@ -5,18 +5,19 @@ import (
 )
 
 type Customer struct {
-	Id        string    `bson:"_id,omitempty"`
-	Password  string    `bson:"password"`
-	FirstName string    `bson:"first_name"`
-	LastName  string    `bson:"last_name"`
-	Email     string    `bson:"email"`
-	Phone     []Phone   `bson:"phone"`
-	Address   []Address `bson:"address"`
-	CreatedAt time.Time `bson:"created_at"`
-	UpdatedAt time.Time `bson:"updated_at"`
-	IsActive  bool      `bson:"is_active"`
-	Role      string    `bson:"role"`
-	Token     string    `bson:"token"`
+	Id           string       `bson:"_id,omitempty"`
+	Password     string       `bson:"password"`
+	FirstName    string       `bson:"first_name"`
+	LastName     string       `bson:"last_name"`
+	Email        string       `bson:"email"`
+	System       System       `bson:"system"`
+	Subscription Subscription `bson:"subscription"`
+	Phone        []Phone      `bson:"phone"`
+	Address      []Address    `bson:"address"`
+	CreatedAt    time.Time    `bson:"created_at"`
+	UpdatedAt    time.Time    `bson:"updated_at"`
+	IsActive     bool         `bson:"is_active"`
+	Token        string       `bson:"token"`
 }
 
 type Address struct {
@@ -29,4 +30,11 @@ type Address struct {
 type Phone struct {
 	Id          string `bson:"phone_id,omitempty"`
 	PhoneNumber int    `bson:"phone_number"`
+}
+type System struct {
+	Role string `bson:"role"`
+}
+
+type Subscription struct {
+	Membership string `bson:"membership"`
 }
