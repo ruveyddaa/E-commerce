@@ -37,7 +37,7 @@ func Authentication(mongoClient *mongo.Client, skipper SkipperFunc) echo.Middlew
 			c.Set("userID", claims.ID)
 			role, err := getUserRoleFromMongo(mongoClient, claims.ID)
 			if err != nil {
-				return customError.NewUnauthorized("")
+				return customError.NewUnauthorized(customError.MissingAuthToken)
 			}
 			c.Set("role", role)
 			return next(c)

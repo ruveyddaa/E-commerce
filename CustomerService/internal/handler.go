@@ -206,6 +206,10 @@ func (h *Handler) Create(c echo.Context) error {
 		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
+	if req.Role.SystemRole == "" {
+		req.Role.SystemRole = "non-premium"
+	}
+
 	err := h.validate.Struct(req)
 	if err != nil {
 		if _, ok := err.(validator.ValidationErrors); !ok {
