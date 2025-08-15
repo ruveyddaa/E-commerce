@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"tesodev-korpes/pkg"
 	"tesodev-korpes/pkg/customError"
 	"time"
 
@@ -26,11 +25,6 @@ func ErrorHandler() echo.MiddlewareFunc {
 			err := next(c)
 			if err == nil {
 				return nil
-			}
-
-			var validationErr *pkg.AppValidationError
-			if errors.As(err, &validationErr) {
-				return c.JSON(validationErr.HTTPStatus, validationErr)
 			}
 
 			var httpErr *echo.HTTPError

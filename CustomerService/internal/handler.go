@@ -9,10 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"tesodev-korpes/CustomerService/internal/types"
-	"tesodev-korpes/CustomerService/validatorCustom"
 	"tesodev-korpes/pkg"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -25,15 +23,14 @@ import (
 // @name Authorization
 
 type Handler struct {
-	service  *Service
-	validate *validator.Validate
+	service *Service
+	// validate *validate
 }
 
 func NewHandler(e *echo.Echo, service *Service, mongoClient *mongo.Client) {
-	validate := validator.New()
 	handler := &Handler{
-		service:  service,
-		validate: validate,
+		service: service,
+		// validate: &validate{},
 	}
 
 	allowedRole_premium := []string{"admin", "manager", "user"}
@@ -73,10 +70,8 @@ func (h *Handler) Login(c echo.Context) error {
 		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
-	if err := h.validate.Struct(req); err != nil {
-		if _, ok := err.(validator.ValidationErrors); ok {
-			return customError.NewValidation(customError.InvalidDataFormat)
-		}
+	if err := req.LoginValidate(); err != nil {
+		return err
 	}
 
 	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
@@ -136,10 +131,6 @@ func (h *Handler) VerifyAuthentication(c echo.Context) error {
 func (h *Handler) GetByEmail(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	email := c.Param("email")
-
-	if !validatorCustom.IsValidEmail(email) {
-		return customError.NewBadRequest(customError.InvalidCustomerBody)
-	}
 
 	customer, err := h.service.GetByEmail(c.Request().Context(), email)
 	if err != nil {
@@ -203,15 +194,12 @@ func (h *Handler) Create(c echo.Context) error {
 	fmt.Println("create handler custom")
 
 	if err := c.Bind(&req); err != nil {
+		fmt.Printf("Bind error: %v\n", err) // hangi alan patlamış görürsün
 		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
-
-	err := h.validate.Struct(req)
-	if err != nil {
-		if _, ok := err.(validator.ValidationErrors); !ok {
-			fmt.Println("Customer validation in progress")
-			return customError.NewValidation(customError.InvalidDataFormat)
-		}
+	
+	if err := req.CreateValidate(); err != nil {
+		return err
 	}
 
 	// service.Create ham (raw) error döndürür. Tanımadığımız için Internal olarak sarmalıyoruz.

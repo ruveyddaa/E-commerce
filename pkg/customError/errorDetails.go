@@ -98,6 +98,36 @@ var ErrorDefinitions = map[ErrorKey]ErrorDetails{
 		StatusCode: http.StatusUnprocessableEntity,
 		Message:    "Invalid data format provided.",
 	},
+	InvalidEmailFormat: {
+		TypeCode:   422102,
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "Invalid email format.",
+	},
+	InvalidFirstName: {
+		TypeCode:   422103,
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "First name must be between 2 and 50 characters.",
+	},
+	InvalidLastName: {
+		TypeCode:   422104,
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "Last name must be between 2 and 50 characters.",
+	},
+	InvalidPasswordFormat: {
+		TypeCode:   422105,
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "Password must be at least 8 characters long.",
+	},
+	InvalidPhoneFormat: {
+		TypeCode:   422106,
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "Invalid phone information provided.",
+	},
+	InvalidAddressFormat: {
+		TypeCode:   422107,
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "Invalid address information provided. City, state, and zip code are required.",
+	},
 
 	// ----- 500 Internal Server Error -----
 	InternalServerError: {
@@ -154,8 +184,13 @@ const (
 	OrderStatusConflict ErrorKey = "OrderStatusConflict"
 
 	// Unprocessable Entity
-	InvalidDataFormat ErrorKey = "InvalidDataFormat"
-
+	InvalidDataFormat     ErrorKey = "InvalidDataFormat"
+	InvalidEmailFormat    ErrorKey = "InvalidEmailFormat"
+	InvalidFirstName      ErrorKey = "InvalidFirstName"
+	InvalidLastName       ErrorKey = "InvalidLastName"
+	InvalidPasswordFormat ErrorKey = "InvalidPasswordFormat"
+	InvalidPhoneFormat    ErrorKey = "InvalidPhoneFormat"
+	InvalidAddressFormat  ErrorKey = "InvalidAddressFormat"
 	// Internal Server Error
 	InternalServerError  ErrorKey = "InternalServerError"
 	CustomerServiceError ErrorKey = "CustomerServiceError"
