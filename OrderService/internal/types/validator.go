@@ -5,17 +5,15 @@ import (
 	"tesodev-korpes/pkg/validators"
 )
 
+func (c CreateOrderRequestModel) CreateValidate() *customError.AppError {
 
-
-func (c  CreateOrderRequestModel) CreateValidate() *customError.AppError {
-
-	if !validators.IsValidAddress(c.ShippingAddress.City) {
+	if !validators.IsEmpty(c.ShippingAddress.City) {
 		return customError.NewUnprocessableEntity(customError.InvalidAddressFormat, nil)
 	}
-	if !validators.IsValidAddress(c.ShippingAddress.ZipCode) {
+	if !validators.IsEmpty(c.ShippingAddress.ZipCode) {
 		return customError.NewUnprocessableEntity(customError.InvalidAddressFormat, nil)
 	}
-	if !validators.IsValidAddress(c.ShippingAddress.State) {
+	if !validators.IsEmpty(c.ShippingAddress.State) {
 		return customError.NewUnprocessableEntity(customError.InvalidAddressFormat, nil)
 	}
 

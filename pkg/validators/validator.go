@@ -31,7 +31,7 @@ func IsValidPhone(phone int) bool {
 	return phone != 0
 }
 
-func IsValidAddress(address string) bool {
+func IsEmpty(address string) bool {
 	return strings.TrimSpace(address) != ""
 
 }

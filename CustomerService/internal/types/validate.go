@@ -23,13 +23,13 @@ func (c CreateCustomerRequestModel) CreateValidate() *customError.AppError {
 		return customError.NewUnprocessableEntity(customError.InvalidPasswordFormat, nil)
 	}
 	for _, addr := range c.Address {
-		if !validators.IsValidAddress(addr.City) {
+		if !validators.IsEmpty(addr.City) {
 			return customError.NewUnprocessableEntity(customError.InvalidAddressFormat, nil)
 		}
-		if !validators.IsValidAddress(addr.ZipCode) {
+		if !validators.IsEmpty(addr.ZipCode) {
 			return customError.NewUnprocessableEntity(customError.InvalidAddressFormat, nil)
 		}
-		if !validators.IsValidAddress(addr.State) {
+		if !validators.IsEmpty(addr.State) {
 			return customError.NewUnprocessableEntity(customError.InvalidAddressFormat, nil)
 		}
 	}
