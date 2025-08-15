@@ -3,8 +3,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"tesodev-korpes/pkg/auth"
-
 	"tesodev-korpes/pkg/customError"
 	"tesodev-korpes/pkg/middleware"
 
@@ -40,7 +38,7 @@ func NewHandler(e *echo.Echo, service *Service, mongoClient *mongo.Client) {
 
 	allowedRole_premium := []string{"admin", "manager", "user"}
 
-	e.Use(middleware.Authentication(mongoClient, auth.Skipper))
+	e.Use(middleware.Authentication(mongoClient, pkg.Skipper))
 
 	g := e.Group("/customer")
 	g.POST("/create", handler.Create)
