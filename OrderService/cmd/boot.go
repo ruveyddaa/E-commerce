@@ -1,11 +1,12 @@
-// File: cmd/boot.go
 package cmd
 
 import (
 	config3 "tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal"
 	"tesodev-korpes/pkg"
-	"tesodev-korpes/pkg/client" // artık customerClient değil
+	"tesodev-korpes/pkg/client"
+	"tesodev-korpes/pkg/middleware"
+	"tesodev-korpes/shared/config"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -21,13 +22,29 @@ func BootOrderService(clientMongo *mongo.Client, e *echo.Echo) {
 	}
 
 	repo := internal.NewRepository(orderCol)
-
-	// fasthttp tabanlı generic client (baseURL + timeout)
 	cc := client.New("http://localhost:8001", 5*time.Second)
-
-	// Service, HTTP çağrıları için generic client alıyor
 	service := internal.NewService(repo, cc)
+	handler := internal.NewHandler(e, service, clientMongo)
 
-	internal.NewHandler(e, service)
+	// DEĞİŞİKLİK 1: Yönlendirici (Dispatcher) Endpoint'i
+	// Hem ":id" eklendi hem de handler'ın içi dolduruldu.
+	e.GET("/price/:id",
+		func(c echo.Context) error {
+			// Bu handler, middleware'ler çalıştıktan SONRA çalışır.
+			// RoleRouting middleware'i c.SetPath() ile yolu değiştirdi.
+			// Şimdi Echo'ya "bu yeni yola göre handler'ı bul ve çalıştır" diyoruz.
+			e.Router().Find(c.Request().Method, c.Path(), c)
+			return c.Handler()(c)
+		},
+		middleware.Authentication(clientMongo, nil),
+		middleware.AuthorizationMiddleware(config.Cfg.AllowedRoles),
+		middleware.RoleRouting(config.Cfg),
+	)
+
+	// DEĞİŞİKLİK 2: Dahili (Internal) Handler'lar
+	// Rotaların sonuna ":id" eklendi.
+	e.GET("/internal/price/premium/:id", handler.GetPremiumOrderPrice)
+	e.GET("/internal/price/non-premium/:id", handler.GetNonPremiumOrderPrice)
+
 	e.Logger.Fatal(e.Start(cfg.Port))
 }

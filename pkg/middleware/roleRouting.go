@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"fmt"
+	"strings" // strings paketini import etmeyi unutma
 	"tesodev-korpes/pkg/customError"
 	"tesodev-korpes/shared/config"
 
@@ -15,12 +17,18 @@ func RoleRouting(cfg config.Config) echo.MiddlewareFunc {
 				return customError.NewBadRequest(customError.EmptyRole)
 			}
 
-			internalPath, ok := cfg.RoleMapping[userRole]
+			internalPathTemplate, ok := cfg.RoleMapping[userRole]
 			if !ok {
 				return customError.NewForbidden(customError.ForbiddenAccess)
 			}
+			fmt.Println("Template Path:", internalPathTemplate) // Örn: /internal/price/non-premium/:id
 
-			// Path’i config’teki internal path ile değiştir
+			// ÖNEMLİ DEĞİŞİKLİK: ID'yi alıp yeni yola ekliyoruz.
+			orderID := c.Param("id")
+			internalPath := strings.Replace(internalPathTemplate, ":id", orderID, 1)
+
+			fmt.Println("Final Path:", internalPath) // Örn: /internal/price/non-premium/e18743ec...
+
 			c.SetPath(internalPath)
 
 			return next(c)

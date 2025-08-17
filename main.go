@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	customercmd "tesodev-korpes/CustomerService/cmd"
-	"tesodev-korpes/CustomerService/controller"
 	ordercmd "tesodev-korpes/OrderService/cmd"
 	_ "tesodev-korpes/docs"
 	"tesodev-korpes/pkg"
@@ -30,17 +29,6 @@ func main() {
 	customerEcho.Use(middleware.RecoveryMiddleware)
 	customerEcho.Use(middleware.ErrorHandler())
 	customerEcho.GET("/swagger/*", echoSwagger.WrapHandler)
-	// customerEcho üzerinde /price endpoint’i
-	customerEcho.GET("/price",
-		func(c echo.Context) error { return nil },                   // boş handler, middleware yönlendirecek
-		middleware.Authentication(client, nil),                      // senin hazır authentication
-		middleware.AuthorizationMiddleware(config.Cfg.AllowedRoles), // senin authorization
-		middleware.RoleRouting(config.Cfg),                          // role routing middleware
-	)
-
-	// internal handler'lar (dışarıdan görünmez)
-	customerEcho.GET("/internal/price/premium", controller.HandlePremiumPrice)
-	customerEcho.GET("/internal/price/non-premium", controller.HandleNonPremiumPrice)
 
 	orderEcho := echo.New()
 	orderEcho.Use(middleware.CorrelationIdMiddleware())

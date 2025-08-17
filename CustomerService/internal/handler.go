@@ -73,11 +73,6 @@ func (h *Handler) Login(c echo.Context) error {
 		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
 
-	if err := h.validate.Struct(req); err != nil {
-		if _, ok := err.(validator.ValidationErrors); ok {
-			return customError.NewValidation(customError.InvalidDataFormat)
-		}
-	}
 
 	token, customer, err := h.service.Login(c.Request().Context(), req.Email, req.Password, correlationID)
 	if err != nil {

@@ -4,6 +4,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"tesodev-korpes/OrderService/config"
@@ -172,4 +173,48 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 		total += float64(item.Quantity) * item.UnitPrice
 	}
 	return total
+}
+
+func (s *Service) CalculateFinalPrice(ctx context.Context, orderID string, role string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, role)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("repoResult", repoResult)
+
+	totalPrice := repoResult.TotalPrice
+	var discountAmount float64 = 1
+	var discountType string
+
+	if repoResult.Discount != nil {
+		d := repoResult.Discount
+		discountType = d.Type
+
+		switch d.Type {
+		case "percentage":
+			discountAmount = totalPrice * (d.Value / 100)
+		case "fixed_amount":
+			discountAmount = d.Value
+		default:
+			discountAmount = 0.0
+			discountType = "unknown"
+		}
+	}
+
+	fmt.Println("repoResult.Discount", repoResult.Discount)
+
+	finalPrice := totalPrice - discountAmount
+	if finalPrice < 0 {
+		finalPrice = 0
+	}
+
+	result := &types.FinalPriceResult{
+		OriginalPrice:   totalPrice,
+		DiscountApplied: discountAmount,
+		FinalPrice:      finalPrice,
+		DiscountType:    discountType,
+	}
+
+	return result, nil
 }

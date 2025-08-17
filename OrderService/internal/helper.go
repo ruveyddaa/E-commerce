@@ -33,6 +33,7 @@ func FromCreateOrderRequest(req *types.CreateOrderRequestModel) *types.Order {
 		Status:          config.OrderStatus.Ordered,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
+		Discount:        req.Discount,
 	}
 }
 
@@ -49,6 +50,7 @@ func ToOrderResponse(order *types.Order) *types.OrderResponseModel {
 		BillingAddress:  order.BillingAddress,
 		TotalPrice:      order.TotalPrice,
 		Status:          order.Status,
+		Discount:        order.Discount,
 		CreatedAt:       order.CreatedAt,
 		UpdatedAt:       order.UpdatedAt,
 	}

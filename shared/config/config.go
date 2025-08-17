@@ -29,8 +29,8 @@ type Config struct {
 var Cfg = Config{
 	AllowedRoles: []string{"premium", "non-premium"},
 	RoleMapping: map[string]string{
-		"premium":     "/internal/price/premium",
-		"non-premium": "/internal/price/non-premium",
+		"premium":     "/internal/price/premium/:id",
+		"non-premium": "/internal/price/non-premium/:id",
 	},
 }
 

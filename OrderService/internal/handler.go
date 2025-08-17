@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/pkg/customError"
@@ -26,7 +27,7 @@ type Handler struct {
 	validate *validator.Validate
 }
 
-func NewHandler(e *echo.Echo, service *Service) {
+func NewHandler(e *echo.Echo, service *Service, clientMongo *mongo.Client) *Handler {
 	validate := validator.New()
 
 	handler := &Handler{
@@ -42,6 +43,8 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.PATCH("/cancel/:id", handler.CancelOrder)
 	g.PATCH("/delete/:id", handler.DeleteOrder)
 	g.GET("/list", handler.GetAllOrders)
+
+	return handler
 }
 
 // Create godoc
@@ -313,4 +316,42 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})
 
+}
+
+func (h *Handler) GetPremiumOrderPrice(c echo.Context) error {
+	orderID := c.Param("id")
+	if orderID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID is required"})
+	}
+
+	result, err := h.service.CalculateFinalPrice(c.Request().Context(), orderID, "premium")
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "An internal error occurred"})
+	}
+
+	fmt.Println(result)
+	return c.JSON(http.StatusOK, result)
+}
+
+func (h *Handler) GetNonPremiumOrderPrice(c echo.Context) error {
+	orderID := c.Param("id")
+
+	if orderID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID is required"})
+	}
+	fmt.Println("id", orderID)
+
+	result, err := h.service.CalculateFinalPrice(c.Request().Context(), orderID, "non-premium")
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "An internal error occurred"})
+	}
+	fmt.Println("result", result)
+
+	return c.JSON(http.StatusOK, result)
 }

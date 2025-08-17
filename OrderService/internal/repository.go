@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"errors"
+	"fmt"
 	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
 	"time"
@@ -127,4 +128,23 @@ func (r *Repository) GetAllOrders(ctx context.Context, findOptions *options.Find
 	}
 
 	return orders, nil
+}
+
+func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string, role string) (*types.OrderPriceInfo, error) {
+
+	var orderData types.OrderPriceInfo
+
+	projection := options.FindOne().SetProjection(bson.M{
+		"total_price": 1,
+		"discount":    1, 
+	})
+
+	err := r.collection.FindOne(ctx, bson.M{"_id": orderID}, projection).Decode(&orderData)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("order data", orderData)
+
+	return &orderData, nil
 }
