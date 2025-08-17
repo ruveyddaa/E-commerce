@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,11 +33,11 @@ func Authentication(mongoClient *mongo.Client, skipper SkipperFunc) echo.Middlew
 				return customError.NewUnauthorized(customError.MissingAuthToken)
 			}
 
-			c.Set("userID", claims.ID)
 			role, err := getUserRoleFromMongo(mongoClient, claims.ID)
 			if err != nil {
 				return customError.NewUnauthorized(customError.MissingAuthToken)
 			}
+			c.Set("userID", claims.ID)
 			c.Set("role", role)
 			return next(c)
 		}
@@ -57,12 +56,13 @@ func getUserRoleFromMongo(mongoClient *mongo.Client, userID string) (string, err
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := col.FindOne(ctx, bson.M{"_id": userID}).Decode(&doc); err != nil {
+	err := col.FindOne(ctx, bson.M{"_id": userID}).Decode(&doc)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return "", customError.NewUnauthorized(customError.CustomerNotFound)
+		}
 		return "", err
 	}
 
-	if doc.Role.SystemRole == "" {
-		return "", fmt.Errorf("role not found for user %s", userID)
-	}
 	return doc.Role.SystemRole, nil
 }
