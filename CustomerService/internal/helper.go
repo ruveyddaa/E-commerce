@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"tesodev-korpes/CustomerService/config"
 	"tesodev-korpes/CustomerService/internal/types"
 
 	"github.com/google/uuid"
@@ -59,11 +60,14 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 		Phone:     phones,
 		Address:   addresses,
 		Password:  req.Password,
-		Role:      req.Role,
-		IsActive:  true,
+		Role: types.Role{
+			SystemRole: config.RoleStatus.System.NonPremium,
+			Membership: config.RoleStatus.Membership.User,
+		},
+		IsActive: true,
 	}
-}
 
+}
 func FromUpdateCustomerRequest(customer *types.Customer, req *types.UpdateCustomerRequestModel) *types.Customer {
 	if customer == nil || req == nil {
 		return customer
