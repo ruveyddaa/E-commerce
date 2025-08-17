@@ -8,6 +8,35 @@ type CustomerConfig struct {
 	}
 }
 
+var RoleStatus = struct {
+	System struct {
+		NonPremium string
+		Premium    string
+	}
+	Membership struct {
+		Admin   string
+		Manager string
+		User    string
+	}
+}{
+	System: struct {
+		NonPremium string
+		Premium    string
+	}{
+		NonPremium: "non-premium",
+		Premium:    "premium",
+	},
+	Membership: struct {
+		Admin   string
+		Manager string
+		User    string
+	}{
+		Admin:   "admin",
+		Manager: "manager",
+		User:    "user",
+	},
+}
+
 var cfgs = map[string]CustomerConfig{
 	"prod": {
 		Port: ":8001",
