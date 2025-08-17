@@ -199,8 +199,14 @@ func (h *Handler) Create(c echo.Context) error {
 	}
 	
 	if err := req.CreateValidate(); err != nil {
-		return err
+		return err}
+
+
+	if req.Role.SystemRole == "" {
+		req.Role.SystemRole = "non-premium"
 	}
+
+	
 
 	// service.Create ham (raw) error döndürür. Tanımadığımız için Internal olarak sarmalıyoruz.
 	createdID, err := h.service.Create(c.Request().Context(), &req)
