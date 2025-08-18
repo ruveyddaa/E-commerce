@@ -130,79 +130,95 @@ func (r *Repository) GetAllOrders(ctx context.Context, findOptions *options.Find
 	return orders, nil
 }
 
+// func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string, role string) (*types.OrderPriceInfo, error) {
+
+// 	now := time.Now()
+
+// 	pipeline := mongo.Pipeline{
+// 		{{Key: "$match", Value: bson.D{
+// 			{Key: "_id", Value: orderID},
+// 		}}},
+// 		{{Key: "$project", Value: bson.D{
+// 			{Key: "total_price", Value: 1},
+// 			{Key: "discount", Value: bson.D{
+// 				{Key: "$filter", Value: bson.D{
+// 					{Key: "input", Value: "$discount"},
+// 					{Key: "as", Value: "d"},
+// 					{Key: "cond", Value: bson.D{
+// 						{Key: "$and", Value: bson.A{
+// 							bson.D{{Key: "$eq", Value: bson.A{"$$d.role", role}}},
+// 							bson.D{{Key: "$lte", Value: bson.A{"$$d.start_date", now}}},
+// 							bson.D{{Key: "$gte", Value: bson.A{"$$d.end_date", now}}},
+// 						}},
+// 					}},
+// 				}},
+// 			}},
+// 		}}},
+// 	}
+
+// 	cursor, err := r.collection.Aggregate(ctx, pipeline)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer cursor.Close(ctx)
+
+// 	if !cursor.Next(ctx) {
+// 		return nil, customError.NewNotFound(customError.OrderNotFound)
+// 	}
+
+// 	var tempResult types.AggregationResult
+// 	if err := cursor.Decode(&tempResult); err != nil {
+// 		return nil, err
+// 	}
+
+// 	finalResult := &types.OrderPriceInfo{
+// 		TotalPrice: tempResult.TotalPrice,
+// 	}
+
+// 	if len(tempResult.Discount) > 0 {
+// 		finalResult.Discount = &tempResult.Discount[0]
+// 	}
+
+// 	return finalResult, nil
+// }
+
 func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string, role string) (*types.OrderPriceInfo, error) {
-
-	now := time.Now()
-
-	pipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{
-			{Key: "_id", Value: orderID},
-		}}},
-		{{Key: "$project", Value: bson.D{
-			{Key: "total_price", Value: 1},
-			{Key: "discount", Value: bson.D{
-				{Key: "$filter", Value: bson.D{
-					{Key: "input", Value: "$discount"},
-					{Key: "as", Value: "d"},
-					{Key: "cond", Value: bson.D{
-						{Key: "$and", Value: bson.A{
-							bson.D{{Key: "$eq", Value: bson.A{"$$d.role", role}}},
-							bson.D{{Key: "$lte", Value: bson.A{"$$d.start_date", now}}},
-							bson.D{{Key: "$gte", Value: bson.A{"$$d.end_date", now}}},
-						}},
-					}},
-				}},
-			}},
-		}}},
-	}
-
-	cursor, err := r.collection.Aggregate(ctx, pipeline)
+	var order types.Order
+	filter := bson.M{"_id": orderID}
+	err := r.collection.FindOne(ctx, filter).Decode(&order)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, customError.NewNotFound(customError.OrderNotFound)
+		}
 		return nil, err
 	}
-	defer cursor.Close(ctx)
-
-	if !cursor.Next(ctx) {
-		return nil, customError.NewNotFound(customError.OrderNotFound)
+	var matchingDiscount *types.Discount
+	now := time.Now()
+	for _, discount := range order.Discounts {
+		if discount != nil && discount.Role == role && discount.StartDate.Before(now) && discount.EndDate.After(now) {
+			matchingDiscount = discount
+			break
+		}
 	}
-
-	var tempResult types.AggregationResult
-	if err := cursor.Decode(&tempResult); err != nil {
-		return nil, err
+	result := &types.OrderPriceInfo{
+		TotalPrice: order.TotalPrice,
+		Discount:   matchingDiscount,
 	}
-
-	finalResult := &types.OrderPriceInfo{
-		TotalPrice: tempResult.TotalPrice,
-	}
-
-	if len(tempResult.Discount) > 0 {
-		finalResult.Discount = &tempResult.Discount[0]
-	}
-
-	return finalResult, nil
+	return result, nil
 }
 
-// func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string, role string) (*types.OrderPriceInfo, error) {
-// 	var order types.Order
-// 	filter := bson.M{"_id": orderID}
-// 	err := r.collection.FindOne(ctx, filter).Decode(&order)
+// func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string) (*types.OrderPriceInfo, error) {
+// 	var orderData types.OrderPriceInfo
+// 	projection := options.FindOne().SetProjection(bson.M{
+// 		"total_price": 1,
+// 		"discount":    1,
+// 	})
+// 	err := r.collection.FindOne(ctx, bson.M{"_id": orderID}, projection).Decode(&orderData)
 // 	if err != nil {
 // 		if errors.Is(err, mongo.ErrNoDocuments) {
 // 			return nil, customError.NewNotFound(customError.OrderNotFound)
 // 		}
 // 		return nil, err
 // 	}
-// 	var matchingDiscount *types.Discount
-// 	now := time.Now()
-// 	for _, discount := range order.Discounts {
-// 		if discount != nil && discount.Role == role && discount.StartDate.Before(now) && discount.EndDate.After(now) {
-// 			matchingDiscount = discount
-// 			break
-// 		}
-// 	}
-// 	result := &types.OrderPriceInfo{
-// 		TotalPrice: order.TotalPrice,
-// 		Discount:   matchingDiscount,
-// 	}
-// 	return result, nil
+// 	return &orderData, nil
 // }

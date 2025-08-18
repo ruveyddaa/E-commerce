@@ -16,19 +16,17 @@ import (
 )
 
 type Service struct {
-	repo           *Repository
-	customerClient *client.Client
+	repo   *Repository
+	client *client.Client
 }
 
-func NewService(repo *Repository, customerClient *client.Client) *Service {
+func NewService(repo *Repository, client *client.Client) *Service {
 	return &Service{
-		repo:           repo,
-		customerClient: customerClient,
+		repo:   repo,
+		client: client,
 	}
 }
 
-// Create: order oluşturur; CustomerService'ten müşteriyi doğrular.
-// NOT: token'ı handler'dan alıyoruz ve Authorization header'ı olarak forward ediyoruz.
 func (s *Service) Create(ctx context.Context, order *types.Order, token string) (string, error) {
 	if order.CustomerId == "" {
 		return "", errors.New("customerId not found")
@@ -46,7 +44,6 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 	return id, nil
 }
 
-// GetByID: order + müşteri bilgisi.
 func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -138,7 +135,6 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 	return response, nil
 }
 
-// --- private helpers ---
 
 func (s *Service) fetchCustomerByID(customerID, token string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
@@ -149,11 +145,11 @@ func (s *Service) fetchCustomerByID(customerID, token string) (*types.CustomerRe
 		"Content-Type": "application/json",
 	}
 	if token != "" {
-		headers["Authorization"] = token // Bearer ... (handler ne veriyorsa aynen iletilir)
+		headers["Authorization"] = token 
 	}
 
 	var customer types.CustomerResponseModel
-	if err := s.customerClient.Get("/customer/"+customerID, headers, &customer); err != nil {
+	if err := s.client.Get("/customer/"+customerID, headers, &customer); err != nil {
 		return nil, err
 	}
 	return &customer, nil
