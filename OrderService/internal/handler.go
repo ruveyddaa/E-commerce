@@ -321,17 +321,25 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 func (h *Handler) GetPremiumOrderPrice(c echo.Context) error {
 	orderID := c.Param("id")
 	if orderID == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID is required"})
+		return customError.NewBadRequest(customError.EmptyOrderID)
 	}
 
-	result, err := h.service.CalculateFinalPrice(c.Request().Context(), orderID, "premium")
+	if !pkg.IsValidUUID(orderID) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	result, err := h.service.CalculatePremiumFinalPrice(c.Request().Context(), orderID)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})
-		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "An internal error occurred"})
-	}
 
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderNotFound].TypeCode {
+				return err
+			}
+
+			return customError.NewInternal(customError.OrderServiceError, err)
+		}
+	}
 	fmt.Println(result)
 	return c.JSON(http.StatusOK, result)
 }
@@ -344,7 +352,7 @@ func (h *Handler) GetNonPremiumOrderPrice(c echo.Context) error {
 	}
 	fmt.Println("id", orderID)
 
-	result, err := h.service.CalculateFinalPrice(c.Request().Context(), orderID, "non-premium")
+	result, err := h.service.CalculateNonPremiumFinalPrice(c.Request().Context(), orderID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})

@@ -4,7 +4,6 @@ package internal
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"tesodev-korpes/OrderService/config"
@@ -175,17 +174,10 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 	return total
 }
 
-func (s *Service) CalculateFinalPrice(ctx context.Context, orderID string, role string) (*types.FinalPriceResult, error) {
-	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, role)
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("repoResult", repoResult)
-
+func (s *Service) calculatePriceFromRepoResult(repoResult *types.OrderPriceInfo) *types.FinalPriceResult {
 	totalPrice := repoResult.TotalPrice
-	var discountAmount float64 = 1
-	var discountType string
+	var discountAmount float64 = 0.0 
+	var discountType string          
 
 	if repoResult.Discount != nil {
 		d := repoResult.Discount
@@ -202,19 +194,37 @@ func (s *Service) CalculateFinalPrice(ctx context.Context, orderID string, role 
 		}
 	}
 
-	fmt.Println("repoResult.Discount", repoResult.Discount)
-
 	finalPrice := totalPrice - discountAmount
 	if finalPrice < 0 {
 		finalPrice = 0
 	}
 
-	result := &types.FinalPriceResult{
+	return &types.FinalPriceResult{
 		OriginalPrice:   totalPrice,
 		DiscountApplied: discountAmount,
 		FinalPrice:      finalPrice,
 		DiscountType:    discountType,
 	}
+}
+
+func (s *Service) CalculatePremiumFinalPrice(ctx context.Context, orderID string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, "premium")
+	if err != nil {
+		return nil, err
+	}
+
+	result := s.calculatePriceFromRepoResult(repoResult)
+
+	return result, nil
+}
+
+func (s *Service) CalculateNonPremiumFinalPrice(ctx context.Context, orderID string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, "non-premium")
+	if err != nil {
+		return nil, err
+	}
+
+	result := s.calculatePriceFromRepoResult(repoResult)
 
 	return result, nil
 }

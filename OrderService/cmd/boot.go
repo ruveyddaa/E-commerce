@@ -26,13 +26,9 @@ func BootOrderService(clientMongo *mongo.Client, e *echo.Echo) {
 	service := internal.NewService(repo, cc)
 	handler := internal.NewHandler(e, service, clientMongo)
 
-	// DEĞİŞİKLİK 1: Yönlendirici (Dispatcher) Endpoint'i
-	// Hem ":id" eklendi hem de handler'ın içi dolduruldu.
+
 	e.GET("/price/:id",
 		func(c echo.Context) error {
-			// Bu handler, middleware'ler çalıştıktan SONRA çalışır.
-			// RoleRouting middleware'i c.SetPath() ile yolu değiştirdi.
-			// Şimdi Echo'ya "bu yeni yola göre handler'ı bul ve çalıştır" diyoruz.
 			e.Router().Find(c.Request().Method, c.Path(), c)
 			return c.Handler()(c)
 		},
@@ -40,9 +36,6 @@ func BootOrderService(clientMongo *mongo.Client, e *echo.Echo) {
 		middleware.AuthorizationMiddleware(config.Cfg.AllowedRoles),
 		middleware.RoleRouting(config.Cfg),
 	)
-
-	// DEĞİŞİKLİK 2: Dahili (Internal) Handler'lar
-	// Rotaların sonuna ":id" eklendi.
 	e.GET("/internal/price/premium/:id", handler.GetPremiumOrderPrice)
 	e.GET("/internal/price/non-premium/:id", handler.GetNonPremiumOrderPrice)
 

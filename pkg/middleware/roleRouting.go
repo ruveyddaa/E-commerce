@@ -17,17 +17,17 @@ func RoleRouting(cfg config.Config) echo.MiddlewareFunc {
 				return customError.NewBadRequest(customError.EmptyRole)
 			}
 
+			userRole = "premium"
 			internalPathTemplate, ok := cfg.RoleMapping[userRole]
 			if !ok {
 				return customError.NewForbidden(customError.ForbiddenAccess)
 			}
-			fmt.Println("Template Path:", internalPathTemplate) // Örn: /internal/price/non-premium/:id
+			fmt.Println("Template Path:", internalPathTemplate)
 
-			// ÖNEMLİ DEĞİŞİKLİK: ID'yi alıp yeni yola ekliyoruz.
 			orderID := c.Param("id")
 			internalPath := strings.Replace(internalPathTemplate, ":id", orderID, 1)
 
-			fmt.Println("Final Path:", internalPath) // Örn: /internal/price/non-premium/e18743ec...
+			fmt.Println("Final Path:", internalPath)
 
 			c.SetPath(internalPath)
 

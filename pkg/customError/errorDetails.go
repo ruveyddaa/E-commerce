@@ -38,6 +38,11 @@ var ErrorDefinitions = map[ErrorKey]ErrorDetails{
 		StatusCode: http.StatusBadRequest,
 		Message:    "The requested invalid order id.",
 	},
+	EmptyOrderID: {
+		TypeCode:   400203,
+		StatusCode: http.StatusBadRequest,
+		Message:    "Do not empty field customerID",
+	},
 	InvalidOrderBody: {
 		TypeCode:   400202,
 		StatusCode: http.StatusBadRequest,
@@ -133,6 +138,7 @@ const (
 	InvalidCustomerID   ErrorKey = "InvalidCustomerID"
 	InvalidCustomerBody ErrorKey = "InvalidCustomerBody"
 	EmptyCustomerID     ErrorKey = "EmptyCustomerID"
+	EmptyOrderID        ErrorKey = "EmptyOrderID"
 	EmptyRole           ErrorKey = "EmptyROle"
 	InvalidOrderID      ErrorKey = "InvalidOrderID"
 	InvalidOrderBody    ErrorKey = "InvalidOrderBody"

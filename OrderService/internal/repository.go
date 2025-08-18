@@ -3,9 +3,9 @@ package internal
 import (
 	"context"
 	"errors"
-	"fmt"
 	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
+	"tesodev-korpes/pkg/customError"
 	"time"
 
 	"github.com/google/uuid"
@@ -130,21 +130,58 @@ func (r *Repository) GetAllOrders(ctx context.Context, findOptions *options.Find
 	return orders, nil
 }
 
+// func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string) (*types.OrderPriceInfo, error) {
+
+// 	var orderData types.OrderPriceInfo
+
+// 	projection := options.FindOne().SetProjection(bson.M{
+// 		"total_price": 1,
+// 		"discount":    1,
+// 	})
+
+// 	err := r.collection.FindOne(ctx, bson.M{"_id": orderID}, projection).Decode(&orderData)
+// 	if err != nil {
+// 		if errors.Is(err, mongo.ErrNoDocuments) {
+// 			return nil, customError.NewNotFound(customError.OrderNotFound)
+// 		}
+// 		return nil, err
+// 	}
+
+// 	fmt.Println("order data", orderData)
+
+// 	return &orderData, nil
+// }
+
 func (r *Repository) FindPriceWithMatchingDiscount(ctx context.Context, orderID string, role string) (*types.OrderPriceInfo, error) {
+	var result types.OrderPriceInfo
 
-	var orderData types.OrderPriceInfo
-
-	projection := options.FindOne().SetProjection(bson.M{
-		"total_price": 1,
-		"discount":    1, 
-	})
-
-	err := r.collection.FindOne(ctx, bson.M{"_id": orderID}, projection).Decode(&orderData)
-	if err != nil {
-		return nil, err
+	filter := bson.M{
+		"_id":                 orderID,
+		"discount.role":       role,
+		"discount.start_date": bson.M{"$lte": time.Now()},
+		"discount.end_date":   bson.M{"$gte": time.Now()},
 	}
 
-	fmt.Println("order data", orderData)
+	projection := bson.M{
+		"total_price": 1,
+		"discount":    1,
+	}
 
-	return &orderData, nil
+	err := r.collection.FindOne(ctx, filter, options.FindOne().SetProjection(projection)).Decode(&result)
+	if err == nil {
+		return &result, nil
+	}
+
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		filterWithoutDiscount := bson.M{"_id": orderID}
+		err2 := r.collection.FindOne(ctx, filterWithoutDiscount).Decode(&result)
+		if err2 != nil {
+			return nil, customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		result.Discount = nil
+		return &result, nil
+	}
+
+	return nil, err
 }
