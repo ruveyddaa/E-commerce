@@ -1,72 +1,58 @@
+// File: internal/service.go
 package internal
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"net/http"
-	"tesodev-korpes/pkg/errorPackage"
-	"time"
 
+	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
+	"tesodev-korpes/pkg/client"      // <- fastHTTP wrapper (baseURL + path)
+	"tesodev-korpes/pkg/customError" // <- daha anlamlı hata mesajları için
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Service struct {
-	repo               *Repository
-	httpClient         *http.Client
-	customerServiceURL string
+	repo   *Repository
+	client *client.Client
 }
 
-func NewService(repo *Repository, customerServiceURL string) *Service {
+func NewService(repo *Repository, client *client.Client) *Service {
 	return &Service{
-		repo:               repo,
-		httpClient:         &http.Client{Timeout: 5 * time.Second},
-		customerServiceURL: customerServiceURL,
+		repo:   repo,
+		client: client,
 	}
 }
 
-func (s *Service) Create(ctx context.Context, order *types.Order) (string, error) {
+func (s *Service) Create(ctx context.Context, order *types.Order, token string) (string, error) {
 	if order.CustomerId == "" {
-		return "", errors.New("customerId not found ")
+		return "", errors.New("customerId not found")
 	}
 
-	customer, err := s.fetchCustomerByID(order.CustomerId)
+	customer, err := s.fetchCustomerByID(order.CustomerId, token)
 	if err != nil || customer == nil {
-		return "", fmt.Errorf("customer control unsuccessful")
+		return "", err
 	}
-
-	order.Id = uuid.NewString()
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = time.Now()
-	order.Status = types.OrderOrdered
-	order.TotalPrice = calculateTotalPrice(order.Items)
 
 	id, err := s.repo.Create(ctx, order)
 	if err != nil {
 		return "", err
 	}
-
 	return id, nil
 }
 
-func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCustomerResponse, error) {
+func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, err
-		}
 		return nil, err
 	}
 
-	customer, err := s.fetchCustomerByID(order.CustomerId)
+	customer, err := s.fetchCustomerByID(order.CustomerId, token)
 	if err != nil {
-		return nil, fmt.Errorf("customer fetch failed: %w", err)
+		return nil, err
 	}
 
 	return &types.OrderWithCustomerResponse{
@@ -78,66 +64,51 @@ func (s *Service) GetByID(ctx context.Context, id string) (*types.OrderWithCusto
 func (s *Service) ShipOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
-
-	if order.Status != types.OrderOrdered {
-		return errorPackage.InvalidOrderStateWithStatus("ship", string(order.Status))
+	if order.Status != config.OrderStatus.Ordered {
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Ordered)
 	}
-
-	err = s.repo.UpdateStatusByID(ctx, id, types.OrderShipped)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Shipped)
 }
 
 func (s *Service) DeliverOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
-
-	if order.Status != types.OrderShipped {
-		return errorPackage.InvalidOrderStateWithStatus("deliver", string(order.Status))
+	if order.Status != config.OrderStatus.Shipped {
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Shipped)
 	}
-
-	err = s.repo.UpdateStatusByID(ctx, id, types.OrderDelivered)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Delivered)
 }
 
 func (s *Service) CancelOrder(ctx context.Context, id string) error {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return err
-		}
 		return err
 	}
-
 	switch order.Status {
-	case types.OrderShipped, types.OrderDelivered, types.OrderCanceled:
-		return errorPackage.InvalidOrderStateWithStatus("CANCEL", string(order.Status))
-
+	case config.OrderStatus.Ordered, config.OrderStatus.Delivered, config.OrderStatus.Canceled:
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Canceled)
 	}
+	return s.repo.UpdateStatusByID(ctx, id, config.OrderStatus.Canceled)
+}
 
-	err = s.repo.UpdateStatusByID(ctx, id, types.OrderCanceled)
+func (s *Service) DeleteOrder(ctx context.Context, id string) error {
+	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	if order.Status != config.OrderStatus.Delivered {
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Delivered)
+	}
+	if order.Status != config.OrderStatus.Canceled {
+		return customError.NewConflict(customError.OrderStatusConflict, order.Status, config.OrderStatus.Canceled)
+	}
+
+	return s.repo.SoftDeleteByID(ctx, id)
 }
 
 func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination) ([]*types.OrderResponseModel, error) {
@@ -162,45 +133,25 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 	}
 
 	return response, nil
-
 }
 
-func (s *Service) fetchCustomerByID(customerID string) (*types.CustomerResponseModel, error) {
+
+func (s *Service) fetchCustomerByID(customerID, token string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
-		return nil, errors.New("customerID bos")
+		return nil, errors.New("customerID empty")
 	}
 
-	url := fmt.Sprintf("%s/customer/%s", s.customerServiceURL, customerID)
-	fmt.Printf("Fetching customer from URL: %s\n", url)
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		return nil, err
+	headers := map[string]string{
+		"Content-Type": "application/json",
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		fmt.Printf("Error making HTTP request: %v\n", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	fmt.Printf("Customer service response status: %d\n", resp.StatusCode)
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("Customer service returned non-OK status: %d\n", resp.StatusCode)
-		return nil, nil
+	if token != "" {
+		headers["Authorization"] = token 
 	}
 
 	var customer types.CustomerResponseModel
-	if err := json.NewDecoder(resp.Body).Decode(&customer); err != nil {
-		fmt.Printf("Error decoding customer response: %v\n", err)
+	if err := s.client.Get("/customer/"+customerID, headers, &customer); err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("Successfully fetched customer: %s\n", customer.Id)
 	return &customer, nil
 }
 
@@ -210,4 +161,60 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 		total += float64(item.Quantity) * item.UnitPrice
 	}
 	return total
+}
+
+func (s *Service) calculatePriceFromRepoResult(repoResult *types.OrderPriceInfo) *types.FinalPriceResult {
+	totalPrice := repoResult.TotalPrice
+	var discountAmount float64 = 0.0
+	var discountType string
+
+	if repoResult.Discount != nil {
+		d := repoResult.Discount
+		discountType = d.Type
+
+		switch d.Type {
+		case "percentage":
+			discountAmount = totalPrice * (d.Value / 100)
+		case "fixed-amount":
+			discountAmount = d.Value
+		default:
+			discountAmount = 0.0
+			discountType = "unknown"
+		}
+	}
+
+	finalPrice := totalPrice - discountAmount
+	if finalPrice < 0 {
+		finalPrice = 0
+	}
+
+	return &types.FinalPriceResult{
+		OriginalPrice:   totalPrice,
+		DiscountApplied: discountAmount,
+		FinalPrice:      finalPrice,
+		DiscountType:    discountType,
+	}
+}
+
+func (s *Service) CalculatePremiumFinalPrice(ctx context.Context, orderID string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, "premium")
+	if err != nil {
+		return nil, err
+	}
+
+	result := s.calculatePriceFromRepoResult(repoResult)
+
+	return result, nil
+}
+
+func (s *Service) CalculateNonPremiumFinalPrice(ctx context.Context, orderID string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, "non-premium")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(repoResult.Discount)
+	result := s.calculatePriceFromRepoResult(repoResult)
+
+	return result, nil
 }

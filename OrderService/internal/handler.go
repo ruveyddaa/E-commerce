@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"tesodev-korpes/pkg/errorPackage"
+	"tesodev-korpes/pkg/customError"
 
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg"
@@ -27,7 +27,7 @@ type Handler struct {
 	validate *validator.Validate
 }
 
-func NewHandler(e *echo.Echo, service *Service) {
+func NewHandler(e *echo.Echo, service *Service, clientMongo *mongo.Client) *Handler {
 	validate := validator.New()
 
 	handler := &Handler{
@@ -42,94 +42,115 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.PATCH("/:id/deliver", handler.DeliverOrder)
 	g.DELETE("/cancel/:id", handler.CancelOrder)
 	g.GET("/list", handler.GetAllOrders)
+
+	return handler
 }
 
+// Create godoc
+// @Summary Create a new order
+// @Description Create a new order with the given data
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param order body types.CreateOrderRequestModel true "Order to create"
+// @Success 201 {object} types.OrderResponseModel "Returns created order details"
+// @Failure 400 {object} errorPackage.AppError "Invalid request body"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
+// @Router /orders [post]
 func (h *Handler) Create(c echo.Context) error {
-	correlationID, _ := c.Get("CorrelationID").(string)
-	userID, ok := c.Get("userID").(string)
-	if !ok {
-		return errorPackage.Unauthorized()
-	}
-	userEmail, ok := c.Get("userEmail").(string)
-	if !ok {
-		return errorPackage.Unauthorized()
-	}
 	var req types.CreateOrderRequestModel
 	if err := c.Bind(&req); err != nil {
-		return errorPackage.BadRequest("Invalid request data: " + err.Error())
+		return customError.NewBadRequest(customError.InvalidOrderBody)
 	}
-	req.CustomerId = userID
 
-	if err := h.validate.Struct(req); err != nil {
-		if validationErrs, ok := err.(validator.ValidationErrors); ok {
-			var details []pkg.ValidationErrorDetail
-			for _, e := range validationErrs {
-				details = append(details, pkg.ValidationErrorDetail{
-					Rule:    e.Tag(),
-					Message: fmt.Sprintf("The '%s' field failed on the '%s' rule", e.Field(), e.Tag()),
-				})
-			}
-			return pkg.ValidationFailed(details, errorPackage.ValidationErrorMessages[errorPackage.ResourceCustomerCode422101])
-		}
-		return errorPackage.BadRequest("Validation error")
-	}
-	customer, err := h.service.fetchCustomerByID(userID)
-	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, "Customer service connection failed")
-	}
-	if customer == nil {
-		return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceCustomerCode404101])
-	}
+	token := c.Request().Header.Get("Authorization") // ← kullanıcının JWT’si
+
 	order := FromCreateOrderRequest(&req)
-	createdID, err := h.service.Create(c.Request().Context(), order)
+
+	createdID, err := h.service.Create(c.Request().Context(), order, token) // ← token eklendi
 	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		if err == mongo.ErrNoDocuments {
+			return customError.NewNotFound(customError.CustomerNotFound)
+		}
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
-	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID)
+
+	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID, token)
 	if err != nil {
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, "Failed to retrieve the created order")
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
-	pkg.LogInfoWithCorrelation("Order created successfully", correlationID)
-	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"order": createdOrder,
-		"user": map[string]interface{}{
-			"id":    userID,
-			"email": userEmail,
-		},
-		"message": "Order created successfully",
-	})
+	fmt.Println(createdOrder)
+
+	return c.JSON(http.StatusCreated, createdOrder)
 }
 
 func (h *Handler) GetByID(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
-
 	if !pkg.IsValidUUID(id) {
-		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceOrderCode404201])
+		return customError.NewBadRequest(customError.InvalidOrderID)
 	}
 
-	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id)
+	token := c.Request().Header.Get("Authorization")                              // ← token al
+	orderWithCustomer, err := h.service.GetByID(c.Request().Context(), id, token) // ← token ver
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceOrderCode404201])
+			return customError.NewNotFound(customError.OrderNotFound)
 		}
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		customError.LogErrorWithCorrelation(err, correlationID)
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
-	pkg.LogInfoWithCorrelation("Order with customer fetched", correlationID)
+	customError.LogInfoWithCorrelation("Order with customer fetched", correlationID)
 	return c.JSON(http.StatusOK, orderWithCustomer)
 }
 
+// GetByID godoc
+// @Summary Get order by ID
+// @Description Retrieve an order with customer details by its unique ID
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Success 200 {object} types.OrderWithCustomerResponse "Order details with customer info"
+// @Failure 400 {object} errorPackage.AppError "Invalid ID format"
+// @Failure 404 {object} errorPackage.AppError "Order not found"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
+// @Router /orders/{id} [get]
+
+// ShipOrder godoc
+// @Summary Ship an order
+// @Description Mark an order as shipped by its ID
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
+// @Router /orders/{id}/ship [put]
 func (h *Handler) ShipOrder(c echo.Context) error {
 	id := c.Param("id")
-
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
 	err := h.service.ShipOrder(c.Request().Context(), id)
 	if err != nil {
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
+		}
+
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order shipped successfully"})
@@ -143,50 +164,130 @@ func (h *Handler) ShipOrder(c echo.Context) error {
 // @Produce json
 // @Param id path string true "Order ID"
 // @Success 200 {object} map[string]string "Order delivered successfully"
-// @Failure 400 {object} pkg.AppError "Invalid ID format"
-// @Failure 404 {object} pkg.AppError "Order not found"
-// @Failure 409 {object} pkg.AppError "Invalid order state for delivery"
-// @Failure 500 {object} pkg.AppError "Internal server error"
+// @Failure 400 {object} errorPackage.AppError "Invalid ID format"
+// @Failure 404 {object} errorPackage.AppError "Order not found"
+// @Failure 409 {object} errorPackage.AppError "Invalid order state for delivery"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
 // @Security ApiKeyAuth
 // @Router /order/{id}/deliver [put]
 func (h *Handler) DeliverOrder(c echo.Context) error {
 	id := c.Param("id")
 	if !pkg.IsValidUUID(id) {
-		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceOrderCode404201])
+		return customError.NewBadRequest(customError.InvalidOrderID)
 	}
 
 	err := h.service.DeliverOrder(c.Request().Context(), id)
 	if err != nil {
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
+		}
+
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
 	return c.JSON(http.StatusOK, echo.Map{"message": "Order delivered successfully"})
 }
 
+// CancelOrder godoc
+// @Summary Cancel an order
+// @Description Cancel an order by its ID.
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID (UUID)"
+// @Success 200 {object} map[string]string "Success message"
+// @Failure 400 {object} errorPackage.AppError "Invalid ID format"
+// @Failure 404 {object} errorPackage.AppError "Order not found"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
+// @Router /orders/{id}/cancel [put]
 func (h *Handler) CancelOrder(c echo.Context) error {
 	correlationID, _ := c.Get("CorrelationID").(string)
 	id := c.Param("id")
-	if isValid := pkg.IsValidUUID(id); !isValid {
-		return errorPackage.BadRequest(errorPackage.BadRequestMessages[errorPackage.ResourceOrderCode404201])
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
 	}
 
 	err := h.service.CancelOrder(c.Request().Context(), id)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("order not found for ID: %s", id) {
-			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceOrderCode404201])
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
 		}
 
-		if errResp, ok := err.(*errorPackage.AppError); ok && errResp.Code == errorPackage.CodeOrderStateConflict {
-			return c.JSON(http.StatusConflict, echo.Map{"message": errResp.Message})
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
 		}
 
-		pkg.LogErrorWithCorrelation(err, correlationID)
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		customError.LogErrorWithCorrelation(err, correlationID)
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. The order is now inactive."})
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order cancelled successfully. "})
 }
 
+// DeleteOrder godoc
+// @Summary Soft delete an order by ID
+// @Description Marks the order as deleted without removing it permanently.
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Success 200 {object} map[string]string "Deletion success message"
+// @Failure 404 {object} errorPackage.AppError "Order not found"
+// @Failure 409 {object} errorPackage.AppError "Conflict error"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
+// @Router /orders/{id} [delete]
+func (h *Handler) DeleteOrder(c echo.Context) error {
+	correlationID, _ := c.Get("CorrelationID").(string)
+	id := c.Param("id")
+	if !pkg.IsValidUUID(id) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	err := h.service.DeleteOrder(c.Request().Context(), id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return customError.NewNotFound(customError.OrderNotFound)
+		}
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderStatusConflict].TypeCode {
+				return err
+			}
+
+		}
+
+		customError.LogErrorWithCorrelation(err, correlationID)
+		return customError.NewInternal(customError.OrderServiceError, err)
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{"message": "Order deleted (soft delete) successfully."})
+}
+
+// GetAllOrders godoc
+// @Summary List all orders with pagination
+// @Description Retrieve a paginated list of all orders.
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Number of items per page" default(10)
+// @Success 200 {object} map[string]interface{} "Returns list of orders with pagination"
+// @Failure 404 {object} errorPackage.AppError "No orders found"
+// @Failure 500 {object} errorPackage.AppError "Internal server error"
+// @Router /orders [get]
 func (h *Handler) GetAllOrders(c echo.Context) error {
 	params := types.Pagination{
 		Page:  1,
@@ -208,12 +309,62 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 	orders, err := h.service.GetAllOrders(c.Request().Context(), params)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return errorPackage.NotFound(errorPackage.NotFoundMessages[errorPackage.ResourceOrderCode404201])
+			return customError.NewNotFound(customError.OrderNotFound)
 		}
-
-		return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceOrderCode500201])
+		return customError.NewInternal(customError.OrderServiceError, err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})
 
+}
+
+func (h *Handler) GetPremiumOrderPrice(c echo.Context) error {
+	orderID := c.Param("id")
+	if orderID == "" {
+		return customError.NewBadRequest(customError.EmptyOrderID)
+	}
+
+	if !pkg.IsValidUUID(orderID) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	result, err := h.service.CalculatePremiumFinalPrice(c.Request().Context(), orderID)
+	if err != nil {
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderNotFound].TypeCode {
+				return err
+			}
+
+			return customError.NewInternal(customError.OrderServiceError, err)
+		}
+	}
+	return c.JSON(http.StatusOK, result)
+}
+
+func (h *Handler) GetNonPremiumOrderPrice(c echo.Context) error {
+	orderID := c.Param("id")
+
+	if orderID == "" {
+		return customError.NewBadRequest(customError.EmptyOrderID)
+	}
+	if !pkg.IsValidUUID(orderID) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	result, err := h.service.CalculateNonPremiumFinalPrice(c.Request().Context(), orderID)
+	if err != nil {
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderNotFound].TypeCode {
+				return err
+			}
+
+			return customError.NewInternal(customError.OrderServiceError, err)
+		}
+	}
+
+	return c.JSON(http.StatusOK, result)
 }

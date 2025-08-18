@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"errors"
-	"tesodev-korpes/pkg"
-	"tesodev-korpes/pkg/errorPackage"
+	"fmt"
+	"net/http"
+	"tesodev-korpes/pkg/customError"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -11,10 +12,10 @@ import (
 
 type APIErrorResponse struct {
 	Error struct {
-		Code    string `json:"code"`
+		Code    int    `json:"code"`
 		Message string `json:"message"`
 	} `json:"error"`
-	CorralationID string `json:"corralation_id"`
+	CorrelationID string `json:"correlationID"`
 	Timestamp     string `json:"timestamp"`
 }
 
@@ -26,9 +27,21 @@ func ErrorHandler() echo.MiddlewareFunc {
 				return nil
 			}
 
-			var validationErr *pkg.AppValidationError
-			if errors.As(err, &validationErr) {
-				return c.JSON(validationErr.HTTPStatus, validationErr)
+			var httpErr *echo.HTTPError
+			if errors.As(err, &httpErr) {
+
+				fmt.Printf("[HTTP %d] %v\n", httpErr.Code, httpErr.Message)
+
+				switch httpErr.Code {
+				case http.StatusNotFound:
+					return customError.NewNotFound(customError.UnknownFotFound)
+				case http.StatusBadRequest:
+					return customError.NewBadRequest(customError.UnknownBadRequest)
+				case http.StatusInternalServerError:
+					return customError.NewInternal(customError.UnknownServiceError, err)
+				default:
+					return customError.NewInternal(customError.FrameworkError, httpErr)
+				}
 			}
 
 			appErr := toAppError(err)
@@ -42,28 +55,17 @@ func ErrorHandler() echo.MiddlewareFunc {
 	}
 }
 
-func toAppError(err error) *errorPackage.AppError {
-	var appErr *errorPackage.AppError
+func toAppError(err error) *customError.AppError {
+	var appErr *customError.AppError
 
 	if errors.As(err, &appErr) {
 		return appErr
 	}
 
-	//var httpErr *echo.HTTPError
-	// if errors.As(err, &httpErr) {
-	// 	switch httpErr.Code {
-	// 	case http.StatusBadRequest:
-	// 		return pkg.BadRequest(fmt.Sprintf("%v", httpErr.Message))
-	// 	case http.StatusInternalServerError:
-	// 		return pkg.Internal(err, pkg.InternalServerErrorMessages[pkg.ResourceServiceCode500301])
-	// 	default:
-	// 		return pkg.Wrap(httpErr, httpErr.Code, pkg.CodeInternalFrameworkError, pkg.InternalServerErrorMessages[pkg.ResourceFrameworkCode500401])
-	// 	}
-	// }
-	return errorPackage.Internal(err, errorPackage.InternalServerErrorMessages[errorPackage.ResourceServiceCode500301])
+	return customError.NewInternal(customError.InternalServerError, err)
 }
 
-func buildAPIResponse(err *errorPackage.AppError, c echo.Context) APIErrorResponse {
+func buildAPIResponse(err *customError.AppError, c echo.Context) APIErrorResponse {
 	correlationID := c.Response().Header().Get(echo.HeaderXCorrelationID)
 	if correlationID == "" {
 		correlationID = "not-available"
@@ -72,7 +74,7 @@ func buildAPIResponse(err *errorPackage.AppError, c echo.Context) APIErrorRespon
 	var resp APIErrorResponse
 	resp.Error.Code = err.Code
 	resp.Error.Message = err.Message
-	resp.CorralationID = correlationID
+	resp.CorrelationID = correlationID
 	resp.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	return resp
 }

@@ -3,34 +3,35 @@ package types
 import "time"
 
 type CreateOrderRequestModel struct {
-	CustomerId      string      `bson:"customer_id" json:"customer_id,omitempty"`
-	Items           []OrderItem `bson:"items" json:"items" validate:"required,dive,required"`
-	ShippingAddress Address     `bson:"shipping_address" json:"shipping_address" validate:"required"`
-	BillingAddress  Address     `bson:"billing_address" json:"billing_address" validate:"required"`
+	CustomerId      string      `json:"customer_id,omitempty" validate:"required,dive,required"`
+	Items           []OrderItem `json:"items" validate:"required,dive,required"`
+	Discounts       []*Discount `json:"discounts,omitempty"`
+	ShippingAddress Address     `json:"shipping_address" validate:"required"`
+	BillingAddress  Address     `json:"billing_address" validate:"required"`
 }
 
 type OrderResponseModel struct {
-	Id              string      `bson:"_id" json:"id"`
-	CustomerId      string      `bson:"customer_id" json:"customer_id"`
-	Items           []OrderItem `bson:"items" json:"items"`
-	ShippingAddress Address     `bson:"shipping_address" json:"shipping_address"`
-	BillingAddress  Address     `bson:"billing_address" json:"billing_address"`
-	TotalPrice      float64     `bson:"total_price" json:"total_price"`
-	Status          OrderStatus `bson:"status" json:"status"`
-	CreatedAt       time.Time   `bson:"created_at" json:"created_at"`
-	UpdatedAt       time.Time   `bson:"updated_at" json:"updated_at"`
-	IsDelete        bool        `bson:"is_delete" json:"is_delete"`
+	Id              string      `json:"id"`
+	CustomerId      string      `json:"customer_id"`
+	Items           []OrderItem `json:"items"`
+	ShippingAddress Address     `json:"shipping_address"`
+	BillingAddress  Address     `json:"billing_address"`
+	TotalPrice      float64     `json:"total_price"`
+	Status          string      `json:"status"`
+	CreatedAt       time.Time   `json:"created_at"`
+	UpdatedAt       time.Time   `json:"updated_at"`
+	Discounts       []*Discount `json:"discounts,omitempty"`
+	IsDelete        bool        `json:"is_delete"`
 }
-
 type CustomerResponseModel struct {
-	Id        string    `json:"id" bson:"_id,omitempty"`
-	FirstName string    `json:"first_name" bson:"first_name"`
-	LastName  string    `json:"last_name" bson:"last_name"`
-	Email     string    `json:"email" bson:"email"`
-	Phone     []Phone   `json:"phone" bson:"phone"`
-	Address   []Address `json:"address" bson:"address"`
-	CreatedAt time.Time `json:"created_at" bson:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" bson:"updated_at"`
+	Id        string    `json:"id"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Phone     []Phone   `json:"phone"`
+	Address   []Address `json:"address"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Pagination struct {
@@ -41,4 +42,21 @@ type Pagination struct {
 type OrderWithCustomerResponse struct {
 	OrderResponseModel
 	Customer CustomerResponseModel `json:"customer,omitempty"`
+}
+
+type OrderPriceInfo struct {
+	TotalPrice float64   `bson:"total_price"`
+	Discount   *Discount `bson:"discount,omitempty"`
+}
+
+type FinalPriceResult struct {
+	OriginalPrice   float64 `json:"original_price"`
+	DiscountApplied float64 `json:"discount_applied"`
+	FinalPrice      float64 `json:"final_price"`
+	DiscountType    string  `json:"discount_type,omitempty"`
+}
+
+type AggregationResult struct {
+	TotalPrice float64    `bson:"total_price"`
+	Discount   []Discount `bson:"discount"`
 }

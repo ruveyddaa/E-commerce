@@ -17,6 +17,23 @@ type ServiceUrls struct {
 	CustomerServiceURL string
 }
 
+type AuthConfig struct {
+	JWTSecret string
+}
+
+type Config struct {
+	RoleMapping  map[string]string
+	AllowedRoles []string
+}
+
+var Cfg = Config{
+	AllowedRoles: []string{"premium", "non-premium"},
+	RoleMapping: map[string]string{
+		"premium":     "/internal/price/premium/:id",
+		"non-premium": "/internal/price/non-premium/:id",
+	},
+}
+
 var cfgs = map[string]DbConfig{
 	"prod": {
 		MongoDuration: time.Second * 100,
@@ -29,7 +46,10 @@ var cfgs = map[string]DbConfig{
 	},
 }
 
-var serviceUrls ServiceUrls
+var (
+	serviceUrls ServiceUrls
+	authConfig  AuthConfig
+)
 
 func init() {
 
@@ -40,6 +60,13 @@ func init() {
 
 	serviceUrls = ServiceUrls{
 		CustomerServiceURL: os.Getenv("CUSTOMER_SERVICE_URL"),
+	}
+	authConfig = AuthConfig{
+		JWTSecret: os.Getenv("JWT_SECRET"),
+	}
+
+	if authConfig.JWTSecret == "" {
+		panic("JWT_SECRET environment variable not set")
 	}
 }
 
@@ -52,7 +79,10 @@ func GetDBConfig(env string) *DbConfig {
 	config.MongoClientURI = os.Getenv("MONGO_URI")
 	return &config
 }
-
 func GetServiceURLs() ServiceUrls {
 	return serviceUrls
+}
+
+func GetAuthConfig() AuthConfig {
+	return authConfig
 }

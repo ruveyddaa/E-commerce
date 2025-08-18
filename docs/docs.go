@@ -55,13 +55,68 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/email/{email}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieve a customer by their email address. Used for login verification or profile retrieval.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "customers"
+                ],
+                "summary": "Get customer by email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer Email",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.CustomerResponseModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid email format",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     }
                 }
@@ -111,7 +166,105 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/login": {
+            "post": {
+                "description": "Authenticate user with email and password, return access token and user info.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "User login",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "loginRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.LoginRequestModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns access token and customer info",
+                        "schema": {
+                            "$ref": "#/definitions/types.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized, invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error on input data",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/verify": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Verify the authentication token and return user details if valid.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "authentication"
+                ],
+                "summary": "Verify user authentication",
+                "responses": {
+                    "200": {
+                        "description": "Returns user info on successful authentication",
+                        "schema": {
+                            "$ref": "#/definitions/types.VerifyTokenResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized or invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     }
                 }
@@ -148,25 +301,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.CustomerResponseModel"
+                            "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.CustomerResponseModel"
                         }
                     },
                     "400": {
                         "description": "Invalid ID format",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "404": {
                         "description": "Customer not found",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     }
                 }
@@ -210,25 +363,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.CustomerResponseModel"
+                            "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.CustomerResponseModel"
                         }
                     },
                     "400": {
                         "description": "Invalid ID format or request body",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "404": {
                         "description": "Customer not found",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     }
                 }
@@ -266,19 +419,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID format",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "404": {
                         "description": "Customer not found",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     }
                 }
@@ -324,25 +477,316 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID format",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "404": {
                         "description": "Order not found",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "409": {
                         "description": "Invalid order state for delivery",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/pkg.AppError"
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders": {
+            "get": {
+                "description": "Retrieve a paginated list of all orders.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "List all orders with pagination",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns list of orders with pagination",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "No orders found",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new order with the given data",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Create a new order",
+                "parameters": [
+                    {
+                        "description": "Order to create",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateOrderRequestModel"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Returns created order details",
+                        "schema": {
+                            "$ref": "#/definitions/types.OrderResponseModel"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}": {
+            "get": {
+                "description": "Retrieve an order with customer details by its unique ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Get order by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order details with customer info",
+                        "schema": {
+                            "$ref": "#/definitions/types.OrderWithCustomerResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Marks the order as deleted without removing it permanently.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Soft delete an order by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion success message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}/cancel": {
+            "put": {
+                "description": "Cancel an order by its ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Cancel an order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID (UUID)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID format",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/orders/{id}/ship": {
+            "put": {
+                "description": "Mark an order as shipped by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "orders"
+                ],
+                "summary": "Ship an order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/errorPackage.AppError"
                         }
                     }
                 }
@@ -350,7 +794,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "pkg.AppError": {
+        "errorPackage.AppError": {
             "type": "object",
             "properties": {
                 "code": {
@@ -364,68 +808,21 @@ const docTemplate = `{
         "tesodev-korpes_CustomerService_internal_types.Address": {
             "type": "object",
             "properties": {
-                "address_id": {
+                "city": {
                     "type": "string"
                 },
-                "city": {
+                "id": {
                     "type": "string"
                 },
                 "state": {
                     "type": "string"
                 },
-                "zip_code": {
+                "zipCode": {
                     "type": "string"
                 }
             }
         },
-        "types.CreateCustomerRequestModel": {
-            "type": "object",
-            "required": [
-                "FirstName",
-                "address",
-                "email",
-                "last_name",
-                "password",
-                "phone"
-            ],
-            "properties": {
-                "FirstName": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2
-                },
-                "address": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Address"
-                    }
-                },
-                "email": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "last_name": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2
-                },
-                "password": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "phone": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/types.Phone"
-                    }
-                }
-            }
-        },
-        "types.CustomerResponseModel": {
+        "tesodev-korpes_CustomerService_internal_types.CustomerResponseModel": {
             "type": "object",
             "properties": {
                 "address": {
@@ -438,10 +835,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "email": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "first_name": {
                     "type": "string"
@@ -458,7 +852,73 @@ const docTemplate = `{
                 "phone": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.Phone"
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Phone"
+                    }
+                },
+                "role": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "tesodev-korpes_CustomerService_internal_types.Phone": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "integer"
+                }
+            }
+        },
+        "tesodev-korpes_OrderService_internal_types.Address": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "zipCode": {
+                    "type": "string"
+                }
+            }
+        },
+        "tesodev-korpes_OrderService_internal_types.CustomerResponseModel": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Phone"
                     }
                 },
                 "updated_at": {
@@ -466,14 +926,206 @@ const docTemplate = `{
                 }
             }
         },
-        "types.Phone": {
+        "tesodev-korpes_OrderService_internal_types.Phone": {
             "type": "object",
             "properties": {
-                "phone_id": {
+                "id": {
                     "type": "string"
                 },
-                "phone_number": {
+                "phoneNumber": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.CreateCustomerRequestModel": {
+            "type": "object",
+            "required": [
+                "address",
+                "email",
+                "first_name",
+                "last_name",
+                "password",
+                "phone"
+            ],
+            "properties": {
+                "address": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Address"
+                    }
+                },
+                "email": {
+                    "type": "string"
+                },
+                "first_name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Phone"
+                    }
+                }
+            }
+        },
+        "types.CreateOrderRequestModel": {
+            "type": "object",
+            "required": [
+                "billing_address",
+                "customer_id",
+                "items",
+                "shipping_address"
+            ],
+            "properties": {
+                "billing_address": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.OrderItem"
+                    }
+                },
+                "shipping_address": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                }
+            }
+        },
+        "types.LoginRequestModel": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.CustomerResponseModel"
+                }
+            }
+        },
+        "types.OrderItem": {
+            "type": "object",
+            "properties": {
+                "productId": {
+                    "type": "string"
+                },
+                "productName": {
+                    "type": "string"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "unitPrice": {
+                    "type": "number"
+                }
+            }
+        },
+        "types.OrderResponseModel": {
+            "type": "object",
+            "properties": {
+                "billing_address": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_delete": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.OrderItem"
+                    }
+                },
+                "shipping_address": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_price": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.OrderWithCustomerResponse": {
+            "type": "object",
+            "properties": {
+                "billing_address": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "customer": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.CustomerResponseModel"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_delete": {
+                    "type": "boolean"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.OrderItem"
+                    }
+                },
+                "shipping_address": {
+                    "$ref": "#/definitions/tesodev-korpes_OrderService_internal_types.Address"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_price": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -490,10 +1142,7 @@ const docTemplate = `{
                     }
                 },
                 "email": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
+                    "type": "string"
                 },
                 "first_name": {
                     "type": "string",
@@ -509,16 +1158,35 @@ const docTemplate = `{
                     "minLength": 2
                 },
                 "password": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "string"
                 },
                 "phone": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/types.Phone"
+                        "$ref": "#/definitions/tesodev-korpes_CustomerService_internal_types.Phone"
                     }
+                }
+            }
+        },
+        "types.VerifiedUser": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.VerifyTokenResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/types.VerifiedUser"
                 }
             }
         }
