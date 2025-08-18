@@ -5,7 +5,7 @@ import "time"
 type CreateOrderRequestModel struct {
 	CustomerId      string      `json:"customer_id,omitempty" validate:"required,dive,required"`
 	Items           []OrderItem `json:"items" validate:"required,dive,required"`
-	Discount        *Discount   `json:"discount,omitempty"`
+	Discounts       []*Discount `json:"discounts,omitempty"`
 	ShippingAddress Address     `json:"shipping_address" validate:"required"`
 	BillingAddress  Address     `json:"billing_address" validate:"required"`
 }
@@ -20,7 +20,7 @@ type OrderResponseModel struct {
 	Status          string      `json:"status"`
 	CreatedAt       time.Time   `json:"created_at"`
 	UpdatedAt       time.Time   `json:"updated_at"`
-	Discount        *Discount   `json:"discount,omitempty"`
+	Discounts       []*Discount `json:"discounts,omitempty"`
 	IsDelete        bool        `json:"is_delete"`
 }
 type CustomerResponseModel struct {
@@ -54,4 +54,9 @@ type FinalPriceResult struct {
 	DiscountApplied float64 `json:"discount_applied"`
 	FinalPrice      float64 `json:"final_price"`
 	DiscountType    string  `json:"discount_type,omitempty"`
+}
+
+type AggregationResult struct {
+	TotalPrice float64    `bson:"total_price"`
+	Discount   []Discount `bson:"discount"`
 }

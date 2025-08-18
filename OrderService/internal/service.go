@@ -4,14 +4,13 @@ package internal
 import (
 	"context"
 	"errors"
-	"time"
+	"fmt"
 
 	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg/client"      // <- fastHTTP wrapper (baseURL + path)
 	"tesodev-korpes/pkg/customError" // <- daha anlamlı hata mesajları için
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -39,12 +38,6 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 	if err != nil || customer == nil {
 		return "", err
 	}
-
-	order.Id = uuid.NewString()
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = time.Now()
-	order.Status = config.OrderStatus.Ordered
-	order.TotalPrice = calculateTotalPrice(order.Items)
 
 	id, err := s.repo.Create(ctx, order)
 	if err != nil {
@@ -176,8 +169,8 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 
 func (s *Service) calculatePriceFromRepoResult(repoResult *types.OrderPriceInfo) *types.FinalPriceResult {
 	totalPrice := repoResult.TotalPrice
-	var discountAmount float64 = 0.0 
-	var discountType string          
+	var discountAmount float64 = 0.0
+	var discountType string
 
 	if repoResult.Discount != nil {
 		d := repoResult.Discount
@@ -186,7 +179,7 @@ func (s *Service) calculatePriceFromRepoResult(repoResult *types.OrderPriceInfo)
 		switch d.Type {
 		case "percentage":
 			discountAmount = totalPrice * (d.Value / 100)
-		case "fixed_amount":
+		case "fixed-amount":
 			discountAmount = d.Value
 		default:
 			discountAmount = 0.0
@@ -224,6 +217,7 @@ func (s *Service) CalculateNonPremiumFinalPrice(ctx context.Context, orderID str
 		return nil, err
 	}
 
+	fmt.Println(repoResult.Discount)
 	result := s.calculatePriceFromRepoResult(repoResult)
 
 	return result, nil

@@ -19,7 +19,7 @@ type Order struct {
 	ShippingAddress Address     `bson:"shipping_address"`
 	BillingAddress  Address     `bson:"billing_address"`
 	TotalPrice      float64     `bson:"total_price"`
-	Discount        *Discount   `bson:"discount,omitempty"`
+	Discounts       []*Discount `bson:"discount,omitempty"`
 	Status          string      `bson:"status"`
 	CreatedAt       time.Time   `bson:"created_at"`
 	UpdatedAt       time.Time   `bson:"updated_at"`
@@ -44,3 +44,5 @@ type Phone struct {
 	Id          string `bson:"phone_id,omitempty"`
 	PhoneNumber int    `bson:"phone_number"`
 }
+
+
