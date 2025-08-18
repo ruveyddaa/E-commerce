@@ -11,10 +11,6 @@ import (
 func AuthorizationMiddleware(allowedRoles []string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			userID, ok := c.Get("userID").(string)
-			if !ok || userID == "" {
-				return customError.NewBadRequest(customError.EmptyCustomerID)
-			}
 			userRole, ok := c.Get("userRole").(string)
 			fmt.Println(userRole)
 			if !ok || userRole == "" {

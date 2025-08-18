@@ -1,11 +1,12 @@
-// File: cmd/boot.go
 package cmd
 
 import (
 	config3 "tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal"
 	"tesodev-korpes/pkg"
-	"tesodev-korpes/pkg/client" // artık customerClient değil
+	"tesodev-korpes/pkg/client"
+	"tesodev-korpes/pkg/middleware"
+	"tesodev-korpes/shared/config"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -21,13 +22,22 @@ func BootOrderService(clientMongo *mongo.Client, e *echo.Echo) {
 	}
 
 	repo := internal.NewRepository(orderCol)
-
-	// fasthttp tabanlı generic client (baseURL + timeout)
 	cc := client.New("http://localhost:8001", 5*time.Second)
-
-	// Service, HTTP çağrıları için generic client alıyor
 	service := internal.NewService(repo, cc)
+	handler := internal.NewHandler(e, service, clientMongo)
 
-	internal.NewHandler(e, service)
+
+	e.GET("/price/:id",
+		func(c echo.Context) error {
+			e.Router().Find(c.Request().Method, c.Path(), c)
+			return c.Handler()(c)
+		},
+		middleware.Authentication(clientMongo, nil),
+		middleware.AuthorizationMiddleware(config.Cfg.AllowedRoles),
+		middleware.RoleRouting(config.Cfg),
+	)
+	e.GET("/internal/price/premium/:id", handler.GetPremiumOrderPrice)
+	e.GET("/internal/price/non-premium/:id", handler.GetNonPremiumOrderPrice)
+
 	e.Logger.Fatal(e.Start(cfg.Port))
 }

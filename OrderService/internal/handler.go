@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"tesodev-korpes/pkg/customError"
@@ -26,7 +27,7 @@ type Handler struct {
 	validate *validator.Validate
 }
 
-func NewHandler(e *echo.Echo, service *Service) {
+func NewHandler(e *echo.Echo, service *Service, clientMongo *mongo.Client) *Handler {
 	validate := validator.New()
 
 	handler := &Handler{
@@ -42,6 +43,8 @@ func NewHandler(e *echo.Echo, service *Service) {
 	g.PATCH("/cancel/:id", handler.CancelOrder)
 	g.PATCH("/delete/:id", handler.DeleteOrder)
 	g.GET("/list", handler.GetAllOrders)
+
+	return handler
 }
 
 // Create godoc
@@ -80,6 +83,7 @@ func (h *Handler) Create(c echo.Context) error {
 		}
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
+	fmt.Println(createdOrder)
 
 	return c.JSON(http.StatusCreated, createdOrder)
 }
@@ -313,4 +317,55 @@ func (h *Handler) GetAllOrders(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": orders})
 
+}
+
+func (h *Handler) GetPremiumOrderPrice(c echo.Context) error {
+	orderID := c.Param("id")
+	if orderID == "" {
+		return customError.NewBadRequest(customError.EmptyOrderID)
+	}
+
+	if !pkg.IsValidUUID(orderID) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	result, err := h.service.CalculatePremiumFinalPrice(c.Request().Context(), orderID)
+	if err != nil {
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderNotFound].TypeCode {
+				return err
+			}
+
+			return customError.NewInternal(customError.OrderServiceError, err)
+		}
+	}
+	return c.JSON(http.StatusOK, result)
+}
+
+func (h *Handler) GetNonPremiumOrderPrice(c echo.Context) error {
+	orderID := c.Param("id")
+
+	if orderID == "" {
+		return customError.NewBadRequest(customError.EmptyOrderID)
+	}
+	if !pkg.IsValidUUID(orderID) {
+		return customError.NewBadRequest(customError.InvalidOrderID)
+	}
+
+	result, err := h.service.CalculateNonPremiumFinalPrice(c.Request().Context(), orderID)
+	if err != nil {
+
+		var appErr *customError.AppError
+		if errors.As(err, &appErr) {
+			if appErr.Code == customError.ErrorDefinitions[customError.OrderNotFound].TypeCode {
+				return err
+			}
+
+			return customError.NewInternal(customError.OrderServiceError, err)
+		}
+	}
+
+	return c.JSON(http.StatusOK, result)
 }

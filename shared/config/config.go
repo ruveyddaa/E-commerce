@@ -21,6 +21,19 @@ type AuthConfig struct {
 	JWTSecret string
 }
 
+type Config struct {
+	RoleMapping  map[string]string
+	AllowedRoles []string
+}
+
+var Cfg = Config{
+	AllowedRoles: []string{"premium", "non-premium"},
+	RoleMapping: map[string]string{
+		"premium":     "/internal/price/premium/:id",
+		"non-premium": "/internal/price/non-premium/:id",
+	},
+}
+
 var cfgs = map[string]DbConfig{
 	"prod": {
 		MongoDuration: time.Second * 100,

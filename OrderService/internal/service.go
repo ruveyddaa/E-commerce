@@ -4,32 +4,29 @@ package internal
 import (
 	"context"
 	"errors"
-	"time"
+	"fmt"
 
 	"tesodev-korpes/OrderService/config"
 	"tesodev-korpes/OrderService/internal/types"
 	"tesodev-korpes/pkg/client"      // <- fastHTTP wrapper (baseURL + path)
 	"tesodev-korpes/pkg/customError" // <- daha anlamlı hata mesajları için
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Service struct {
-	repo           *Repository
-	customerClient *client.Client
+	repo   *Repository
+	client *client.Client
 }
 
-func NewService(repo *Repository, customerClient *client.Client) *Service {
+func NewService(repo *Repository, client *client.Client) *Service {
 	return &Service{
-		repo:           repo,
-		customerClient: customerClient,
+		repo:   repo,
+		client: client,
 	}
 }
 
-// Create: order oluşturur; CustomerService'ten müşteriyi doğrular.
-// NOT: token'ı handler'dan alıyoruz ve Authorization header'ı olarak forward ediyoruz.
 func (s *Service) Create(ctx context.Context, order *types.Order, token string) (string, error) {
 	if order.CustomerId == "" {
 		return "", errors.New("customerId not found")
@@ -40,12 +37,6 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 		return "", err
 	}
 
-	order.Id = uuid.NewString()
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = time.Now()
-	order.Status = config.OrderStatus.Ordered
-	order.TotalPrice = calculateTotalPrice(order.Items)
-
 	id, err := s.repo.Create(ctx, order)
 	if err != nil {
 		return "", err
@@ -53,7 +44,6 @@ func (s *Service) Create(ctx context.Context, order *types.Order, token string) 
 	return id, nil
 }
 
-// GetByID: order + müşteri bilgisi.
 func (s *Service) GetByID(ctx context.Context, id string, token string) (*types.OrderWithCustomerResponse, error) {
 	order, err := s.repo.GetByID(ctx, id)
 	if err != nil {
@@ -145,7 +135,6 @@ func (s *Service) GetAllOrders(ctx context.Context, pagination types.Pagination)
 	return response, nil
 }
 
-// --- private helpers ---
 
 func (s *Service) fetchCustomerByID(customerID, token string) (*types.CustomerResponseModel, error) {
 	if customerID == "" {
@@ -156,11 +145,11 @@ func (s *Service) fetchCustomerByID(customerID, token string) (*types.CustomerRe
 		"Content-Type": "application/json",
 	}
 	if token != "" {
-		headers["Authorization"] = token // Bearer ... (handler ne veriyorsa aynen iletilir)
+		headers["Authorization"] = token 
 	}
 
 	var customer types.CustomerResponseModel
-	if err := s.customerClient.Get("/customer/"+customerID, headers, &customer); err != nil {
+	if err := s.client.Get("/customer/"+customerID, headers, &customer); err != nil {
 		return nil, err
 	}
 	return &customer, nil
@@ -172,4 +161,60 @@ func calculateTotalPrice(items []types.OrderItem) float64 {
 		total += float64(item.Quantity) * item.UnitPrice
 	}
 	return total
+}
+
+func (s *Service) calculatePriceFromRepoResult(repoResult *types.OrderPriceInfo) *types.FinalPriceResult {
+	totalPrice := repoResult.TotalPrice
+	var discountAmount float64 = 0.0
+	var discountType string
+
+	if repoResult.Discount != nil {
+		d := repoResult.Discount
+		discountType = d.Type
+
+		switch d.Type {
+		case "percentage":
+			discountAmount = totalPrice * (d.Value / 100)
+		case "fixed-amount":
+			discountAmount = d.Value
+		default:
+			discountAmount = 0.0
+			discountType = "unknown"
+		}
+	}
+
+	finalPrice := totalPrice - discountAmount
+	if finalPrice < 0 {
+		finalPrice = 0
+	}
+
+	return &types.FinalPriceResult{
+		OriginalPrice:   totalPrice,
+		DiscountApplied: discountAmount,
+		FinalPrice:      finalPrice,
+		DiscountType:    discountType,
+	}
+}
+
+func (s *Service) CalculatePremiumFinalPrice(ctx context.Context, orderID string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, "premium")
+	if err != nil {
+		return nil, err
+	}
+
+	result := s.calculatePriceFromRepoResult(repoResult)
+
+	return result, nil
+}
+
+func (s *Service) CalculateNonPremiumFinalPrice(ctx context.Context, orderID string) (*types.FinalPriceResult, error) {
+	repoResult, err := s.repo.FindPriceWithMatchingDiscount(ctx, orderID, "non-premium")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(repoResult.Discount)
+	result := s.calculatePriceFromRepoResult(repoResult)
+
+	return result, nil
 }
