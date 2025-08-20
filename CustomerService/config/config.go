@@ -10,23 +10,16 @@ type CustomerConfig struct {
 
 var RoleStatus = struct {
 	System struct {
-		NonPremium string
-		Premium    string
-	}
-	Membership struct {
 		Admin   string
 		Manager string
 		User    string
 	}
-}{
-	System: struct {
+	Membership struct {
 		NonPremium string
 		Premium    string
-	}{
-		NonPremium: "non-premium",
-		Premium:    "premium",
-	},
-	Membership: struct {
+	}
+}{
+	System: struct {
 		Admin   string
 		Manager string
 		User    string
@@ -34,6 +27,13 @@ var RoleStatus = struct {
 		Admin:   "admin",
 		Manager: "manager",
 		User:    "user",
+	},
+	Membership: struct {
+		NonPremium string
+		Premium    string
+	}{
+		NonPremium: "non-premium",
+		Premium:    "premium",
 	},
 }
 

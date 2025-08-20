@@ -61,8 +61,8 @@ func FromCreateCustomerRequest(req *types.CreateCustomerRequestModel) *types.Cus
 		Address:   addresses,
 		Password:  req.Password,
 		Role: types.Role{
-			SystemRole: config.RoleStatus.System.NonPremium,
-			Membership: config.RoleStatus.Membership.User,
+			SystemRole: config.RoleStatus.System.User,
+			Membership: config.RoleStatus.Membership.NonPremium,
 		},
 		IsActive: true,
 	}

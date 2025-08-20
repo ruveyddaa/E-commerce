@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"tesodev-korpes/pkg/customError"
 	"tesodev-korpes/pkg/middleware"
+	"tesodev-korpes/shared/config"
 
 	"net/http"
 	"strconv"
@@ -24,16 +25,12 @@ import (
 
 type Handler struct {
 	service *Service
-	// validate *validate
 }
 
 func NewHandler(e *echo.Echo, service *Service, mongoClient *mongo.Client) {
 	handler := &Handler{
 		service: service,
-		// validate: &validate{},
 	}
-
-	allowedRole_premium := []string{"admin", "manager", "user"}
 
 	e.Use(middleware.Authentication(mongoClient, pkg.Skipper))
 
@@ -42,7 +39,7 @@ func NewHandler(e *echo.Echo, service *Service, mongoClient *mongo.Client) {
 	g.POST("/login", handler.Login)
 
 	g.GET("/:id", handler.GetByID)
-	g.GET("/email/:email", handler.GetByEmail, middleware.AuthorizationMiddleware(allowedRole_premium))
+	g.GET("/email/:email", handler.GetByEmail, middleware.AuthorizationMiddleware(&config.Cfg))
 	g.PUT("/:id", handler.Update)
 	g.DELETE("/:id", handler.Delete)
 	g.GET("/list", handler.GetListCustomer)
@@ -197,16 +194,14 @@ func (h *Handler) Create(c echo.Context) error {
 		fmt.Printf("Bind error: %v\n", err) // hangi alan patlamış görürsün
 		return customError.NewBadRequest(customError.InvalidCustomerBody)
 	}
-	
-	if err := req.CreateValidate(); err != nil {
-		return err}
 
+	if err := req.CreateValidate(); err != nil {
+		return err
+	}
 
 	if req.Role.SystemRole == "" {
 		req.Role.SystemRole = "non-premium"
 	}
-
-	
 
 	// service.Create ham (raw) error döndürür. Tanımadığımız için Internal olarak sarmalıyoruz.
 	createdID, err := h.service.Create(c.Request().Context(), &req)

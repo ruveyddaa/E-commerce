@@ -74,6 +74,7 @@ func (h *Handler) Create(c echo.Context) error {
 		}
 		return customError.NewInternal(customError.OrderServiceError, err)
 	}
+	fmt.Println(createdID)
 
 	createdOrder, err := h.service.GetByID(c.Request().Context(), createdID, token)
 	if err != nil {

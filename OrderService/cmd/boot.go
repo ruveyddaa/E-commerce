@@ -26,6 +26,10 @@ func BootOrderService(clientMongo *mongo.Client, e *echo.Echo) {
 	service := internal.NewService(repo, cc)
 	handler := internal.NewHandler(e, service, clientMongo)
 
+	internalHandlers := map[string]echo.HandlerFunc{
+		"/internal/price/premium/:id":     handler.GetPremiumOrderPrice,
+		"/internal/price/non-premium/:id": handler.GetNonPremiumOrderPrice,
+	}
 
 	e.GET("/price/:id",
 		func(c echo.Context) error {
@@ -33,11 +37,11 @@ func BootOrderService(clientMongo *mongo.Client, e *echo.Echo) {
 			return c.Handler()(c)
 		},
 		middleware.Authentication(clientMongo, nil),
-		middleware.AuthorizationMiddleware(config.Cfg.AllowedRoles),
-		middleware.RoleRouting(config.Cfg),
+		middleware.AuthorizationMiddleware(&config.Cfg),
+		middleware.RoleRouting(config.Cfg, internalHandlers),
 	)
-	e.GET("/internal/price/premium/:id", handler.GetPremiumOrderPrice)
-	e.GET("/internal/price/non-premium/:id", handler.GetNonPremiumOrderPrice)
+	// e.GET("/internal/price/premium/:id", handler.GetPremiumOrderPrice)
+	// e.GET("/internal/price/non-premium/:id", handler.GetNonPremiumOrderPrice)
 
 	e.Logger.Fatal(e.Start(cfg.Port))
 }

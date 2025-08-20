@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"strings" // strings paketini import etmeyi unutma
 	"tesodev-korpes/pkg/customError"
@@ -9,15 +10,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func RoleRouting(cfg config.Config) echo.MiddlewareFunc {
+func RoleRouting(cfg config.Config, handlers map[string]echo.HandlerFunc) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			userRole, ok := c.Get("userRole").(string)
+			userRole, ok := c.Get("userMembership").(string)
 			if !ok || userRole == "" {
 				return customError.NewBadRequest(customError.EmptyRole)
 			}
 
-			userRole = "premium"
 			internalPathTemplate, ok := cfg.RoleMapping[userRole]
 			if !ok {
 				return customError.NewForbidden(customError.ForbiddenAccess)
@@ -29,9 +29,12 @@ func RoleRouting(cfg config.Config) echo.MiddlewareFunc {
 
 			fmt.Println("Final Path:", internalPath)
 
-			c.SetPath(internalPath)
+			targetHandler, found := handlers[internalPathTemplate]
+			if !found {
+				return customError.NewInternal(customError.OrderServiceError, errors.New("not exist endpoint"))
+			}
 
-			return next(c)
+			return targetHandler(c)
 		}
 	}
 }
