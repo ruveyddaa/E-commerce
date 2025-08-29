@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=tesodev
+      - MONGO_INITDB_ROOT_PASSWORD=tesodev
+    volumes:
+      - mongodata:/data/db
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "8000:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=tesodev
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=tesodev
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_BASICAUTH_USERNAME=admin   
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin   
+    depends_on:
+      - mongo
+
+
+  app:
+    container_name: go-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+      - "8001:8001"
+    environment:
+      - MONGO_URL=mongodb://tesodev:tesodev@mongo:27017/?authSource=admin 
+      - CUSTOMER_SERVICE_URL=http://localhost:8001
+      - JWT_SECRET=G7#x9*LpQz!4&kVmR2@tHsWy$FjE8oNb
+    depends_on:
+      - mongo
+
+volumes:
+  mongodata:

@@ -1,11 +1,8 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 type DbConfig struct {
@@ -84,10 +81,10 @@ var (
 
 func init() {
 
-	if err := godotenv.Load("./media/.env"); err != nil {
-		panic("Environment variable did not load")
-	}
-	fmt.Println("Environment variables loaded")
+	// if err := godotenv.Load("./media/.env"); err != nil {
+	// 	panic("Environment variable did not load")
+	// }
+	// fmt.Println("Environment variables loaded")
 
 	serviceUrls = ServiceUrls{
 		CustomerServiceURL: os.Getenv("CUSTOMER_SERVICE_URL"),
@@ -107,7 +104,7 @@ func GetDBConfig(env string) *DbConfig {
 		panic("config does not exist")
 	}
 
-	config.MongoClientURI = os.Getenv("MONGO_URI")
+	config.MongoClientURI = os.Getenv("MONGO_URL")
 	return &config
 }
 func GetServiceURLs() ServiceUrls {
