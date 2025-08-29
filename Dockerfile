@@ -19,6 +19,5 @@
     
     COPY --from=builder /app/main .
     
-    # EntryPoint ayarla
+
     ENTRYPOINT ["/main"]
-    
