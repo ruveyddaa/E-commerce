@@ -11,23 +11,6 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=tesodev
     volumes:
       - mongodata:/data/db
-
-  mongo-express:
-    image: mongo-express:latest
-    container_name: mongo-express
-    restart: always
-    ports:
-      - "8000:8081"
-    environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=tesodev
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=tesodev
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_BASICAUTH_USERNAME=admin   
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin   
-    depends_on:
-      - mongo
-
-
   app:
     container_name: go-app
     build:
