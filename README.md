@@ -12,6 +12,7 @@ Kimlik Doğrulama: JWT
 Middleware: Authentication, Authorization, Correlation ID, Error Handling, Logging, Recovery, Role-Based Routing
 Özel Hata Yapısı: Kendi Error paketi
 Validation: Request doğrulama
+Containerization: Docker
 
 Servisler
 
@@ -76,6 +77,12 @@ Mikroservis Haberleşmesi
 
 Servisler Fast HTTP kullanarak birbirleriyle haberleşir
 Performans odaklı ve düşük gecikmeli istek yönetimi sağlar
+
+Docker Entegrasyonu
+
+Proje Docker ile containerize edilmiştir.
+Tüm servisler ve bağımlılıklar container içinde çalıştırılabilir.
+Docker Compose veya benzeri araçlar ile geliştirme ve üretim ortamlarında kolay deploy sağlanabilir.
 
 Kurulum
 
